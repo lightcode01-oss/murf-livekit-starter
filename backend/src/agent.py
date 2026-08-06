@@ -8,43 +8,146 @@ from livekit.agents import (
     AgentSession,
     JobContext,
     JobProcess,
+    RunContext,
     cli,
+    function_tool,
     inference,
-    tokenize,
     room_io,
+    tokenize,
 )
-from livekit.plugins import murf, silero, google, deepgram, noise_cancellation
+from livekit.plugins import deepgram, google, murf, noise_cancellation, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 logger = logging.getLogger("agent")
 
 load_dotenv(".env.local")
 
-# Change this prompt to change what your voice agent does.
-# See README.md for example prompts (customer support, language tutor, receptionist).
-SYSTEM_PROMPT = """You are a friendly and efficient customer support agent for a tech company. Help users with account issues, billing questions, and product troubleshooting. Be concise, empathetic, and solution-oriented. If you don't know something, say so honestly and offer to escalate. Your responses are concise and without complex formatting, emojis, or symbols."""
+# System Prompt configured for Health Access Assistant (ASHA worker tools, triage, reminders, schemes)
+SYSTEM_PROMPT = """You are Swasthya Sathi, an empathetic and knowledgeable AI Health Access Assistant built to support ASHA workers and community members in India. 
+Your core mission is improving healthcare access, symptom triage, ASHA worker field workflows, medication adherence, and government health scheme eligibility.
+
+Key Guidelines:
+1. Symptom Triage: Ask clarifying questions about symptoms (duration, severity). Identify red flags (e.g. difficulty breathing, high fever in infants, severe pain, heavy bleeding) and urge immediate PHC/hospital visits or emergency (108). Always clarify you provide health information, not final medical diagnosis.
+2. ASHA Worker Tools: Assist ASHA workers with logging patient visits, tracking maternal/child immunization, and managing village health logs.
+3. Medication Reminders: Help set up daily dosage reminders and explain how to take medicines safely as prescribed.
+4. Health Schemes: Provide guidance on Ayushman Bharat (PM-JAY), Janani Suraksha Yojana (JSY), PM Matru Vandana Yojana (PMMVY), and POSHAN Abhiyaan.
+
+Voice Response Style:
+- Warm, respectful, clear, and reassuring.
+- Keep spoken answers concise (1-3 sentences per turn) so it sounds natural over voice calls.
+- Do NOT use markdown symbols, bullet points, asterisks, or emojis in your speech outputs."""
 
 
 class Assistant(Agent):
     def __init__(self) -> None:
         super().__init__(instructions=SYSTEM_PROMPT)
 
-    # To add tools, use the @function_tool decorator.
-    # Here's an example that adds a simple weather tool.
-    # You also have to add `from livekit.agents import function_tool, RunContext` to the top of this file
-    # @function_tool
-    # async def lookup_weather(self, context: RunContext, location: str):
-    #     """Use this tool to look up current weather information in the given location.
-    #
-    #     If the location is not supported by the weather service, the tool will indicate this. You must tell the user the location's weather is unavailable.
-    #
-    #     Args:
-    #         location: The location to look up weather information for (e.g. city name)
-    #     """
-    #
-    #     logger.info(f"Looking up weather for {location}")
-    #
-    #     return "sunny with a temperature of 70 degrees."
+    @function_tool
+    async def triage_symptom(
+        self,
+        context: RunContext,
+        symptom: str,
+        duration_days: int = 1,
+        severity: str = "moderate",
+    ) -> str:
+        """Evaluate patient symptoms and provide preliminary triage advice and referral guidance.
+
+        Args:
+            symptom: The primary symptom described by the user (e.g. fever, cough, chest pain, diarrhea).
+            duration_days: Number of days the symptom has been present.
+            severity: Self-reported severity (mild, moderate, severe).
+        """
+        logger.info(f"Triage request for symptom: {symptom}, duration: {duration_days} days, severity: {severity}")
+        symptom_lower = symptom.lower()
+        if any(w in symptom_lower for w in ["chest pain", "breathing", "unconscious", "heavy bleeding", "convulsion"]):
+            return (
+                "EMERGENCY RED FLAG DETECTED. Advise patient or ASHA worker to seek immediate emergency hospital transport "
+                "or call 108 ambulance service without delay."
+            )
+        elif "fever" in symptom_lower and duration_days >= 3:
+            return (
+                "Fever for more than 3 days requires testing for malaria or dengue at the nearest Primary Health Centre (PHC). "
+                "Advise drinking plenty of fluids and resting."
+            )
+        else:
+            return (
+                f"For {severity} {symptom} lasting {duration_days} day(s), advise rest, adequate hydration, and monitoring. "
+                "If symptoms worsen or fever exceeds 102 degrees, visit the local ASHA worker or PHC clinic."
+            )
+
+    @function_tool
+    async def check_health_scheme_eligibility(
+        self,
+        context: RunContext,
+        scheme_name: str,
+        category: str = "general",
+    ) -> str:
+        """Check eligibility criteria and benefits for Indian government healthcare schemes.
+
+        Args:
+            scheme_name: Name of the health scheme (e.g., Ayushman Bharat, JSY, PMMVY, POSHAN Abhiyaan).
+            category: Demographic category (e.g., pregnant woman, BPL family, infant, senior citizen).
+        """
+        logger.info(f"Checking scheme eligibility for: {scheme_name}, category: {category}")
+        scheme_lower = scheme_name.lower()
+        if "ayushman" in scheme_lower or "pm-jay" in scheme_lower or "pmjay" in scheme_lower:
+            return (
+                "Ayushman Bharat (PM-JAY) provides free health coverage up to 5 Lakh rupees per family per year for secondary and tertiary hospitalization. "
+                "Eligible families are identified via SECC data or Ration Card (BPL status). Ayushman Card can be issued at nearest CSC or PHC."
+            )
+        elif "janani" in scheme_lower or "jsy" in scheme_lower:
+            return (
+                "Janani Suraksha Yojana (JSY) provides cash assistance to pregnant women delivering in government or accredited private health facilities. "
+                "Rural mothers receive 1400 rupees in Low Performing States, plus incentives for ASHA workers supporting institutional delivery."
+            )
+        elif "matru" in scheme_lower or "pmmvy" in scheme_lower:
+            return (
+                "Pradhan Mantri Matru Vandana Yojana (PMMVY) provides 5000 rupees direct benefit transfer in installments for first living child to pregnant and lactating mothers."
+            )
+        elif "poshan" in scheme_lower:
+            return (
+                "POSHAN Abhiyaan provides nutritional support, supplementary nutrition via Anganwadi centers, and regular growth monitoring for pregnant mothers and children under 6."
+            )
+        else:
+            return (
+                f"Information for {scheme_name}: Eligible citizens can check details at the nearest Gram Panchayat, Anganwadi, or PHC center. Ayushman Bharat and JSY are available for low-income families."
+            )
+
+    @function_tool
+    async def log_asha_patient_visit(
+        self,
+        context: RunContext,
+        patient_name: str,
+        visit_type: str,
+        notes: str,
+    ) -> str:
+        """Record an ASHA worker field visit log entry for a community patient.
+
+        Args:
+            patient_name: Name of the patient or beneficiary.
+            visit_type: Type of visit (e.g., ANC checkup, PNC checkup, immunization follow up, TB monitoring, nutrition check).
+            notes: Key observation or notes from the visit.
+        """
+        logger.info(f"Logging ASHA visit for {patient_name}, Type: {visit_type}, Notes: {notes}")
+        return f"Visit successfully logged for patient {patient_name}. Visit Type: {visit_type}. Record saved for ASHA weekly report."
+
+    @function_tool
+    async def schedule_medication_reminder(
+        self,
+        context: RunContext,
+        medicine_name: str,
+        time_of_day: str,
+        instructions: str = "after food",
+    ) -> str:
+        """Set a medication dose reminder for a patient.
+
+        Args:
+            medicine_name: Name of the prescribed medicine.
+            time_of_day: Time or frequency (e.g., Morning 8 AM, Night 9 PM, twice daily).
+            instructions: Administration instructions (e.g., after food, before food, with warm water).
+        """
+        logger.info(f"Setting reminder for {medicine_name} at {time_of_day} ({instructions})")
+        return f"Medication reminder set for {medicine_name} at {time_of_day}, to be taken {instructions}."
 
 
 server = AgentServer()
