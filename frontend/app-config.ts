@@ -33,9 +33,9 @@ export interface AppConfig {
 }
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {
-  companyName: 'Swasthya Sathi',
-  pageTitle: 'Swasthya Sathi - Health Access Assistant',
-  pageDescription: 'AI Voice Health Assistant for symptom triage, ASHA worker tools, and health schemes',
+  companyName: 'CareConnect',
+  pageTitle: 'CareConnect - AI Health Access Assistant',
+  pageDescription: 'AI Health Access Voice Assistant powered by Murf Falcon',
 
   supportsChatInput: true,
   supportsVideoInput: true,
@@ -46,7 +46,7 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   accent: '#6366F1',
   logoDark: '/murf-logo-dark.svg',
   accentDark: '#818cf8',
-  startButtonText: 'START HEALTH CONSULTATION',
+  startButtonText: 'START CONSULTATION',
 
   // optional: audio visualization configuration
   // audioVisualizerType: 'bar',

@@ -11,31 +11,17 @@ from livekit.agents import (
     RunContext,
     cli,
     function_tool,
-    inference,
     room_io,
     tokenize,
 )
 from livekit.plugins import deepgram, google, murf, noise_cancellation, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
+from prompt import SYSTEM_PROMPT
+
 logger = logging.getLogger("agent")
 
 load_dotenv(".env.local")
-
-# System Prompt configured for Health Access Assistant (ASHA worker tools, triage, reminders, schemes)
-SYSTEM_PROMPT = """You are Swasthya Sathi, an empathetic and knowledgeable AI Health Access Assistant built to support ASHA workers and community members in India. 
-Your core mission is improving healthcare access, symptom triage, ASHA worker field workflows, medication adherence, and government health scheme eligibility.
-
-Key Guidelines:
-1. Symptom Triage: Ask clarifying questions about symptoms (duration, severity). Identify red flags (e.g. difficulty breathing, high fever in infants, severe pain, heavy bleeding) and urge immediate PHC/hospital visits or emergency (108). Always clarify you provide health information, not final medical diagnosis.
-2. ASHA Worker Tools: Assist ASHA workers with logging patient visits, tracking maternal/child immunization, and managing village health logs.
-3. Medication Reminders: Help set up daily dosage reminders and explain how to take medicines safely as prescribed.
-4. Health Schemes: Provide guidance on Ayushman Bharat (PM-JAY), Janani Suraksha Yojana (JSY), PM Matru Vandana Yojana (PMMVY), and POSHAN Abhiyaan.
-
-Voice Response Style:
-- Warm, respectful, clear, and reassuring.
-- Keep spoken answers concise (1-3 sentences per turn) so it sounds natural over voice calls.
-- Do NOT use markdown symbols, bullet points, asterisks, or emojis in your speech outputs."""
 
 
 class Assistant(Agent):
@@ -57,9 +43,20 @@ class Assistant(Agent):
             duration_days: Number of days the symptom has been present.
             severity: Self-reported severity (mild, moderate, severe).
         """
-        logger.info(f"Triage request for symptom: {symptom}, duration: {duration_days} days, severity: {severity}")
+        logger.info(
+            f"Triage request for symptom: {symptom}, duration: {duration_days} days, severity: {severity}"
+        )
         symptom_lower = symptom.lower()
-        if any(w in symptom_lower for w in ["chest pain", "breathing", "unconscious", "heavy bleeding", "convulsion"]):
+        if any(
+            w in symptom_lower
+            for w in [
+                "chest pain",
+                "breathing",
+                "unconscious",
+                "heavy bleeding",
+                "convulsion",
+            ]
+        ):
             return (
                 "EMERGENCY RED FLAG DETECTED. Advise patient or ASHA worker to seek immediate emergency hospital transport "
                 "or call 108 ambulance service without delay."
@@ -88,9 +85,15 @@ class Assistant(Agent):
             scheme_name: Name of the health scheme (e.g., Ayushman Bharat, JSY, PMMVY, POSHAN Abhiyaan).
             category: Demographic category (e.g., pregnant woman, BPL family, infant, senior citizen).
         """
-        logger.info(f"Checking scheme eligibility for: {scheme_name}, category: {category}")
+        logger.info(
+            f"Checking scheme eligibility for: {scheme_name}, category: {category}"
+        )
         scheme_lower = scheme_name.lower()
-        if "ayushman" in scheme_lower or "pm-jay" in scheme_lower or "pmjay" in scheme_lower:
+        if (
+            "ayushman" in scheme_lower
+            or "pm-jay" in scheme_lower
+            or "pmjay" in scheme_lower
+        ):
             return (
                 "Ayushman Bharat (PM-JAY) provides free health coverage up to 5 Lakh rupees per family per year for secondary and tertiary hospitalization. "
                 "Eligible families are identified via SECC data or Ration Card (BPL status). Ayushman Card can be issued at nearest CSC or PHC."
@@ -101,17 +104,11 @@ class Assistant(Agent):
                 "Rural mothers receive 1400 rupees in Low Performing States, plus incentives for ASHA workers supporting institutional delivery."
             )
         elif "matru" in scheme_lower or "pmmvy" in scheme_lower:
-            return (
-                "Pradhan Mantri Matru Vandana Yojana (PMMVY) provides 5000 rupees direct benefit transfer in installments for first living child to pregnant and lactating mothers."
-            )
+            return "Pradhan Mantri Matru Vandana Yojana (PMMVY) provides 5000 rupees direct benefit transfer in installments for first living child to pregnant and lactating mothers."
         elif "poshan" in scheme_lower:
-            return (
-                "POSHAN Abhiyaan provides nutritional support, supplementary nutrition via Anganwadi centers, and regular growth monitoring for pregnant mothers and children under 6."
-            )
+            return "POSHAN Abhiyaan provides nutritional support, supplementary nutrition via Anganwadi centers, and regular growth monitoring for pregnant mothers and children under 6."
         else:
-            return (
-                f"Information for {scheme_name}: Eligible citizens can check details at the nearest Gram Panchayat, Anganwadi, or PHC center. Ayushman Bharat and JSY are available for low-income families."
-            )
+            return f"Information for {scheme_name}: Eligible citizens can check details at the nearest Gram Panchayat, Anganwadi, or PHC center. Ayushman Bharat and JSY are available for low-income families."
 
     @function_tool
     async def log_asha_patient_visit(
@@ -128,7 +125,9 @@ class Assistant(Agent):
             visit_type: Type of visit (e.g., ANC checkup, PNC checkup, immunization follow up, TB monitoring, nutrition check).
             notes: Key observation or notes from the visit.
         """
-        logger.info(f"Logging ASHA visit for {patient_name}, Type: {visit_type}, Notes: {notes}")
+        logger.info(
+            f"Logging ASHA visit for {patient_name}, Type: {visit_type}, Notes: {notes}"
+        )
         return f"Visit successfully logged for patient {patient_name}. Visit Type: {visit_type}. Record saved for ASHA weekly report."
 
     @function_tool
@@ -146,7 +145,9 @@ class Assistant(Agent):
             time_of_day: Time or frequency (e.g., Morning 8 AM, Night 9 PM, twice daily).
             instructions: Administration instructions (e.g., after food, before food, with warm water).
         """
-        logger.info(f"Setting reminder for {medicine_name} at {time_of_day} ({instructions})")
+        logger.info(
+            f"Setting reminder for {medicine_name} at {time_of_day} ({instructions})"
+        )
         return f"Medication reminder set for {medicine_name} at {time_of_day}, to be taken {instructions}."
 
 
@@ -176,17 +177,17 @@ async def my_agent(ctx: JobContext):
         # A Large Language Model (LLM) is your agent's brain, processing user input and generating a response
         # See all available models at https://docs.livekit.io/agents/models/llm/
         llm=google.LLM(
-                model="gemini-3.5-flash-lite",
-            ),
+            model="gemini-3.5-flash-lite",
+        ),
         # Text-to-speech (TTS) is your agent's voice, turning the LLM's text into speech that the user can hear
         # See all available models as well as voice selections at https://docs.livekit.io/agents/models/tts/
         tts=murf.TTS(
-                voice="Anisha", 
-                locale="hi-IN",
-                style="Conversation",
-                tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
-                text_pacing=True
-            ),
+            voice="Anisha",
+            locale="hi-IN",
+            style="Conversation",
+            tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
+            text_pacing=True,
+        ),
         # VAD and turn detection are used to determine when the user is speaking and when the agent should respond
         # See more at https://docs.livekit.io/agents/build/turns
         turn_detection=MultilingualModel(),
