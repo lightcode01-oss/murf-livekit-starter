@@ -215,6 +215,9 @@ async def my_agent(ctx: JobContext):
     # # Start the avatar and wait for it to join
     # await avatar.start(session, room=ctx.room)
 
+    # Join the room and connect to the user first
+    await ctx.connect()
+
     # Start the session, which initializes the voice pipeline and warms up the models
     await session.start(
         agent=Assistant(),
@@ -231,8 +234,10 @@ async def my_agent(ctx: JobContext):
         ),
     )
 
-    # Join the room and connect to the user
-    await ctx.connect()
+    # Immediately greet the user with spoken audio upon connection
+    await session.generate_reply(
+        instructions="Namaste! Main Swasthya Sathi hoon, aapka health access assistant. Aap mujhse kisi bhi swasthya jankari ya hospital ke baare mein pooch sakte hain."
+    )
 
 
 if __name__ == "__main__":
