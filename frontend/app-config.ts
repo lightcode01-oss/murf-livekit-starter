@@ -33,9 +33,9 @@ export interface AppConfig {
 }
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {
-  companyName: 'CareConnect',
-  pageTitle: 'CareConnect - AI Health Access Assistant',
-  pageDescription: 'AI Health Access Voice Assistant powered by Murf Falcon',
+  companyName: 'JANA SEVA',
+  pageTitle: 'JANA SEVA — Healthcare, in your voice | Voice of Bharat',
+  pageDescription: 'AI Voice Assistant for public health access, hospital lookup, schemes & medicine guidance in India',
 
   supportsChatInput: true,
   supportsVideoInput: true,
@@ -43,10 +43,10 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   isPreConnectBufferEnabled: true,
 
   logo: '/murf-logo.svg',
-  accent: '#6366F1',
+  accent: '#E06D14',
   logoDark: '/murf-logo-dark.svg',
-  accentDark: '#818cf8',
-  startButtonText: 'START CONSULTATION',
+  accentDark: '#f97316',
+  startButtonText: 'Talk to Jana Seva',
 
   // optional: audio visualization configuration
   // audioVisualizerType: 'bar',
