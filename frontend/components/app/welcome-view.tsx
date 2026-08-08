@@ -53,7 +53,7 @@ export const WelcomeView = ({
   return (
     <div ref={ref} className="min-h-screen w-full bg-background flex flex-col justify-between overflow-x-hidden selection:bg-amber-500/20">
       {/* Sticky Navbar */}
-      <Navbar onStartVoice={() => handleOpenVoice()} />
+      <Navbar onStartVoice={onStartCall} />
 
       {/* Main Content Sections Container */}
       <main className="w-full max-w-6xl mx-auto px-4 md:px-8 space-y-16 py-8">
@@ -82,7 +82,7 @@ export const WelcomeView = ({
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
               <Button
                 size="lg"
-                onClick={() => handleOpenVoice()}
+                onClick={onStartCall}
                 className="px-8 py-7 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-mono text-sm font-extrabold tracking-wider uppercase shadow-xl shadow-amber-600/25 transition-all duration-300 hover:scale-105 active:scale-95 gap-2.5 cursor-pointer"
               >
                 <Sparkles className="size-5 text-amber-200 animate-pulse" />
@@ -115,14 +115,14 @@ export const WelcomeView = ({
                   Voice-First Health Assistant
                 </p>
                 <p className="text-[11px] text-muted-foreground font-medium">
-                  Tap below or click prompt to start voice query
+                  Click to start live voice consultation
                 </p>
               </div>
 
               {/* Central Voice Orb Trigger */}
               <VoiceOrb
                 state={isConnecting ? 'connecting' : 'idle'}
-                onClick={() => handleOpenVoice()}
+                onClick={onStartCall}
                 size="md"
               />
             </div>

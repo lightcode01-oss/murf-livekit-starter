@@ -291,16 +291,30 @@ export function VoiceModal({
           </div>
         )}
 
-        {/* TAP TO RE-SPEAK CTA */}
-        <div className="pt-4">
+        {/* TAP TO RE-SPEAK OR CONNECT LIVE AGENT CTA */}
+        <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
           <Button
             onClick={() => startDemoFlow()}
             size="lg"
-            className="px-8 py-6 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-mono text-xs font-bold tracking-wider uppercase shadow-xl shadow-amber-600/25 gap-2 cursor-pointer"
+            className="px-6 py-6 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-mono text-xs font-bold tracking-wider uppercase shadow-xl shadow-amber-600/25 gap-2 cursor-pointer"
           >
             <Mic className="size-4 animate-pulse" />
-            <span>Tap Microphone to Speak</span>
+            <span>Try Interactive Voice Demo</span>
           </Button>
+
+          {onLiveStart && (
+            <Button
+              onClick={() => {
+                onClose();
+                onLiveStart();
+              }}
+              size="lg"
+              className="px-6 py-6 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-mono text-xs font-bold tracking-wider uppercase shadow-xl shadow-emerald-600/25 gap-2 cursor-pointer"
+            >
+              <Sparkles className="size-4 animate-pulse" />
+              <span>Connect Live Agent (Real Voice)</span>
+            </Button>
+          )}
         </div>
       </div>
     </div>
