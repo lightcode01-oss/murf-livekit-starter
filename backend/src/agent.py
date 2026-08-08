@@ -236,7 +236,7 @@ async def my_agent(ctx: JobContext):
 
     # Immediately greet the user with spoken audio upon connection
     await session.generate_reply(
-        instructions="Namaste! Main Swasthya Sathi hoon, aapka health access assistant. Aap mujhse kisi bhi swasthya jankari ya hospital ke baare mein pooch sakte hain."
+        instructions="Namaste! Main Dr. Swasthya Sathi hoon Jana Seva se, aapka health access assistant. Aap mujhse kisi bhi swasthya jankari, hospital, ya health scheme ke baare mein pooch sakte hain."
     )
 
 
