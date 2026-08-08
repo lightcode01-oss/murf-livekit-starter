@@ -12,6 +12,8 @@ import { Shimmer } from '@/components/ai-elements/shimmer';
 import { cn } from '@/lib/shadcn/utils';
 import { TileLayout } from './tile-view';
 
+import { AgentStateBadge } from '@/components/app/agent-state-badge';
+
 const MotionMessage = motion.create(Shimmer);
 
 const BOTTOM_VIEW_MOTION_PROPS: MotionProps = {
@@ -204,6 +206,11 @@ export function AgentSessionView_01({
       className={cn('bg-background relative z-10 h-full w-full overflow-hidden', className)}
       {...props}
     >
+      {/* Top Floating State Badge */}
+      <div className="absolute top-4 inset-x-0 z-50 flex justify-center pointer-events-none px-4">
+        <AgentStateBadge state={agentState} className="shadow-lg backdrop-blur-md pointer-events-auto" />
+      </div>
+
       <Fade top className="absolute inset-x-4 top-0 z-10 h-40" />
       {/* transcript */}
 

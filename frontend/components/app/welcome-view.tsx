@@ -1,65 +1,206 @@
-import { Button } from '@/components/ui/button';
+'use client';
 
-function WelcomeImage() {
-  return (
-    <svg
-      width="64"
-      height="64"
-      viewBox="0 0 64 64"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="text-fg0 mb-4 size-16"
-    >
-      <path
-        d="M15 24V40C15 40.7957 14.6839 41.5587 14.1213 42.1213C13.5587 42.6839 12.7956 43 12 43C11.2044 43 10.4413 42.6839 9.87868 42.1213C9.31607 41.5587 9 40.7957 9 40V24C9 23.2044 9.31607 22.4413 9.87868 21.8787C10.4413 21.3161 11.2044 21 12 21C12.7956 21 13.5587 21.3161 14.1213 21.8787C14.6839 22.4413 15 23.2044 15 24ZM22 5C21.2044 5 20.4413 5.31607 19.8787 5.87868C19.3161 6.44129 19 7.20435 19 8V56C19 56.7957 19.3161 57.5587 19.8787 58.1213C20.4413 58.6839 21.2044 59 22 59C22.7956 59 23.5587 58.6839 24.1213 58.1213C24.6839 57.5587 25 56.7957 25 56V8C25 7.20435 24.6839 6.44129 24.1213 5.87868C23.5587 5.31607 22.7956 5 22 5ZM32 13C31.2044 13 30.4413 13.3161 29.8787 13.8787C29.3161 14.4413 29 15.2044 29 16V48C29 48.7957 29.3161 49.5587 29.8787 50.1213C30.4413 50.6839 31.2044 51 32 51C32.7956 51 33.5587 50.6839 34.1213 50.1213C34.6839 49.5587 35 48.7957 35 48V16C35 15.2044 34.6839 14.4413 34.1213 13.8787C33.5587 13.3161 32.7956 13 32 13ZM42 21C41.2043 21 40.4413 21.3161 39.8787 21.8787C39.3161 22.4413 39 23.2044 39 24V40C39 40.7957 39.3161 41.5587 39.8787 42.1213C40.4413 42.6839 41.2043 43 42 43C42.7957 43 43.5587 42.6839 44.1213 42.1213C44.6839 41.5587 45 40.7957 45 40V24C45 23.2044 44.6839 22.4413 44.1213 21.8787C43.5587 21.3161 42.7957 21 42 21ZM52 17C51.2043 17 50.4413 17.3161 49.8787 17.8787C49.3161 18.4413 49 19.2044 49 20V44C49 44.7957 49.3161 45.5587 49.8787 46.1213C50.4413 46.6839 51.2043 47 52 47C52.7957 47 53.5587 46.6839 54.1213 46.1213C54.6839 45.5587 55 44.7957 55 44V20C55 19.2044 54.6839 18.4413 54.1213 17.8787C53.5587 17.3161 52.7957 17 52 17Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { AgentStateBadge } from '@/components/app/agent-state-badge';
+import {
+  Stethoscope,
+  ClipboardList,
+  Clock,
+  FileCheck,
+  PhoneCall,
+  ShieldAlert,
+  Sparkles,
+  Loader2,
+  RotateCcw,
+  HeartPulse,
+} from 'lucide-react';
+import { HealthAvatar } from '@/components/app/health-avatar';
 
 interface WelcomeViewProps {
   startButtonText: string;
   onStartCall: () => void;
+  isConnecting?: boolean;
+  isDisconnected?: boolean;
+  hasEnded?: boolean;
+  onResetSession?: () => void;
 }
 
 export const WelcomeView = ({
   startButtonText,
   onStartCall,
+  isConnecting = false,
+  isDisconnected = false,
+  hasEnded = false,
+  onResetSession,
   ref,
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
   return (
-    <div ref={ref}>
-      <section className="bg-background flex flex-col items-center justify-center text-center">
-        <WelcomeImage />
+    <div ref={ref} className="min-h-screen w-full bg-background flex flex-col justify-between p-4 md:p-8 overflow-y-auto">
+      {/* Top Health Access Navigation Header */}
+      <header className="w-full max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-border/40">
+        <div className="flex items-center gap-3">
+          <div className="size-11 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center ring-4 ring-teal-500/5 shadow-xs">
+            <HeartPulse className="size-6 animate-pulse" />
+          </div>
+          <div>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              Swasthya Sathi
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-700 dark:text-teal-300 uppercase tracking-wide">
+                Voice AI
+              </span>
+            </h1>
+            <p className="text-xs text-muted-foreground font-medium">Healthcare Access & ASHA Worker Support System</p>
+          </div>
+        </div>
 
-        <p className="text-foreground max-w-prose pt-1 leading-6 font-medium">
-          Swasthya Sathi — AI Voice Health Assistant
+        <div className="flex items-center gap-2.5">
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 text-xs font-bold shadow-xs">
+            <ShieldAlert className="size-3.5" />
+            <span>108 Emergency Helpline</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-xs font-semibold">
+            <ClipboardList className="size-3.5 text-emerald-600" />
+            <span>ASHA Tools Active</span>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Hero & State Area */}
+      <main className="w-full max-w-4xl mx-auto my-auto py-8 flex flex-col items-center text-center space-y-8">
+        {/* Current State Badge */}
+        <AgentStateBadge
+          state={
+            hasEnded || isDisconnected
+              ? 'disconnected'
+              : isConnecting
+              ? 'connecting'
+              : 'ready'
+          }
+        />
+
+        {/* Dynamic State 1 / 2 / 5 Views */}
+        {hasEnded || isDisconnected ? (
+          /* STATE 5: Call Ended View */
+          <div className="bg-card border-border/80 rounded-3xl p-8 border shadow-xl max-w-md w-full space-y-6 animate-in fade-in zoom-in-95 duration-300">
+            <div className="size-16 rounded-full bg-slate-500/10 text-slate-600 dark:text-slate-300 mx-auto flex items-center justify-center ring-8 ring-slate-500/5">
+              <PhoneCall className="size-8 rotate-135 text-red-500" />
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-foreground">Health Consultation Ended</h2>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Your consultation session with Swasthya Sathi has concluded. You can review your visit notes or start a new health session anytime.
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <Button
+                size="lg"
+                onClick={onStartCall}
+                className="w-full rounded-full font-mono text-xs font-bold tracking-wider uppercase bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 gap-2 h-12"
+              >
+                <RotateCcw className="size-4" />
+                START NEW CONSULTATION
+              </Button>
+            </div>
+          </div>
+        ) : isConnecting ? (
+          /* STATE 2: Connecting View */
+          <div className="bg-card border-border/80 rounded-3xl p-8 border shadow-xl max-w-md w-full space-y-6 animate-in fade-in zoom-in-95 duration-300 flex flex-col items-center">
+            <HealthAvatar state="connecting" size="md" showDetails={false} />
+
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-foreground">Connecting to Swasthya Sathi</h2>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Joining room and establishing voice pipeline for symptom triage & health guidance. Please wait...
+              </p>
+            </div>
+          </div>
+        ) : (
+          /* STATE 1: Ready View */
+          <div className="space-y-8 w-full flex flex-col items-center">
+            {/* Dr. Swasthya Sathi Avatar */}
+            <HealthAvatar state="ready" size="xl" showDetails={true} />
+
+            {/* Title & Headline */}
+            <div className="space-y-3 max-w-2xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight leading-tight">
+                Empowering Rural Healthcare with <span className="bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">Voice AI</span>
+              </h2>
+              <p className="text-sm md:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+                Speak directly in Hindi or simple English to triage symptoms, check government health schemes, log ASHA visits, and get medicine reminders.
+              </p>
+            </div>
+
+            {/* Primary Action Button (State 1) */}
+            <div>
+              <Button
+                size="lg"
+                onClick={onStartCall}
+                className="px-10 py-7 min-w-[280px] rounded-full font-mono text-sm font-extrabold tracking-wider uppercase bg-teal-600 hover:bg-teal-700 text-white shadow-xl shadow-teal-600/25 transition-all duration-300 hover:scale-105 active:scale-95"
+              >
+                <Sparkles className="size-5 mr-2 animate-pulse text-amber-300" />
+                {startButtonText}
+              </Button>
+            </div>
+
+            {/* Step 1: Health Access 4 Feature Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left pt-6">
+              {/* Card 1: Symptom Triage */}
+              <div className="bg-card/80 border-border/70 rounded-2xl p-5 border shadow-xs hover:border-teal-500/40 hover:shadow-md transition-all space-y-3 backdrop-blur-xs">
+                <div className="size-10 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+                  <Stethoscope className="size-5" />
+                </div>
+                <h3 className="font-bold text-sm text-foreground">Symptom Triage</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Evaluate fever, cough, & child health symptoms. Instant 108 emergency red flag alerts & PHC referral guidance.
+                </p>
+              </div>
+
+              {/* Card 2: ASHA Worker Tools */}
+              <div className="bg-card/80 border-border/70 rounded-2xl p-5 border shadow-xs hover:border-emerald-500/40 hover:shadow-md transition-all space-y-3 backdrop-blur-xs">
+                <div className="size-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <ClipboardList className="size-5" />
+                </div>
+                <h3 className="font-bold text-sm text-foreground">ASHA Worker Tools</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Log ANC/PNC field visits, track immunization schedules, and maintain community health logs by voice.
+                </p>
+              </div>
+
+              {/* Card 3: Medication Reminders */}
+              <div className="bg-card/80 border-border/70 rounded-2xl p-5 border shadow-xs hover:border-sky-500/40 hover:shadow-md transition-all space-y-3 backdrop-blur-xs">
+                <div className="size-10 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                  <Clock className="size-5" />
+                </div>
+                <h3 className="font-bold text-sm text-foreground">Medication Reminders</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Set daily dose schedules and get clear guidance on taking prescribed medicines safely after meals.
+                </p>
+              </div>
+
+              {/* Card 4: Scheme Eligibility */}
+              <div className="bg-card/80 border-border/70 rounded-2xl p-5 border shadow-xs hover:border-indigo-500/40 hover:shadow-md transition-all space-y-3 backdrop-blur-xs">
+                <div className="size-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                  <FileCheck className="size-5" />
+                </div>
+                <h3 className="font-bold text-sm text-foreground">Scheme Eligibility</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Check eligibility for Ayushman Bharat (PM-JAY), Janani Suraksha Yojana (JSY), PMMVY, and POSHAN Abhiyaan.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Footer Disclaimer */}
+      <footer className="w-full max-w-5xl mx-auto pt-6 border-t border-border/30 text-center">
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          <strong>Medical Disclaimer:</strong> Swasthya Sathi provides preliminary health information and triage guidance for community support. In case of life-threatening emergency, call <strong>108 Ambulance</strong> or visit the nearest Primary Health Centre (PHC) immediately.
         </p>
-
-        <Button
-          size="lg"
-          onClick={onStartCall}
-          className="mt-6 px-8 min-w-[260px] w-auto rounded-full font-mono text-xs font-bold tracking-wider uppercase"
-        >
-          {startButtonText}
-        </Button>
-      </section>
-
-      <div className="fixed bottom-5 left-0 flex w-full items-center justify-center">
-        <p className="text-muted-foreground max-w-prose pt-1 text-xs leading-5 font-normal text-pretty md:text-sm">
-          Need help getting set up? Check out the{' '}
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://docs.livekit.io/agents/start/voice-ai/"
-            className="underline"
-          >
-            Voice AI quickstart
-          </a>
-          .
-        </p>
-      </div>
+      </footer>
     </div>
   );
 };
