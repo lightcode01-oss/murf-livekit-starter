@@ -30,7 +30,9 @@ export async function POST(req: Request) {
       throw new Error('LIVEKIT_API_SECRET is not defined');
     }
 
-    // Parse room config from request body (if provided).
+    // Parse room config & caller user_id from request body or URL.
+    const url = new URL(req.url);
+    const queryUserId = url.searchParams.get('user_id');
     const body = await req.json().catch(() => ({}));
     let roomConfig: RoomConfiguration | undefined;
     if (body?.room_config) {
@@ -43,10 +45,11 @@ export async function POST(req: Request) {
         { ignoreUnknownFields: true }
       );
     }
-      
-    // Generate participant token
+
+    // Determine participant identity (support user_id override or stable demo identity)
     const participantName = 'user';
-    const participantIdentity = `voice_assistant_user_${Math.floor(Math.random() * 10_000)}`;
+    const participantIdentity =
+      queryUserId || body?.user_id || 'demo_caller_ramesh';
     const roomName = `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
 
     const participantToken = await createParticipantToken(
