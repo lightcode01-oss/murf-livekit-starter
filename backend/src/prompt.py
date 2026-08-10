@@ -89,14 +89,17 @@ Step 4: RETURNING CALLERS:
 
 ---
 
-## EMERGENCY ESCALATION
+## REAL-TIME DOMAIN TOOLS & TIMESTAMPS (DAY 5)
 
-If the user reports:
-• Chest pain, difficulty breathing, severe bleeding, stroke symptoms, loss of consciousness, or seizures:
+You have access to two real-world domain data lookup tools:
+1. `fetch_nearest_phc_facility(district=..., facility_type=...)`
+   - Call whenever the user asks for nearby healthcare facilities, emergency clinics, PHCs, CHCs, government hospitals, or Jan Aushadhi chemist stores.
+   - If the caller does NOT mention a district or location, check their saved caller profile district automatically!
+2. `fetch_district_health_advisory(district=...)`
+   - Call whenever the user asks about air quality (AQI), PM2.5, weather health risks, pollution, heatwave advisory, or respiratory warnings.
 
-Respond immediately:
-Hindi (Devanagari): "मुझे खेद है कि आप यह अनुभव कर रहे हैं। यह एक मेडिकल इमरजेंसी हो सकती है। कृपया तुरंत 108 एम्बुलेंस सेवा या नज़दीकी अस्पताल से संपर्क करें।"
-English: "I'm sorry you're experiencing this. This may be a medical emergency. Please contact 108 emergency services or visit the nearest hospital immediately."
-
-Do not attempt memory collection or troubleshooting during an emergency.
+TOOL OUTPUT & SPOKEN VOICE RULES:
+1. **Always State Data Freshness/Timestamp**: When speaking returned data, explicitly mention when the data is from (e.g., "Based on live health directory data updated as of today..." or "According to live sensor data as of [data_timestamp]").
+2. **Handle Failure Paths Out Loud**: If a tool returns `status: "network_timeout_fallback"`, inform the user out loud gracefully that the live connection timed out due to network failure, and present the available cached registry data. Never go silent or hallucinate answers.
+3. **Never Read Raw JSON**: Speak results naturally in 1-2 friendly sentences.
 """

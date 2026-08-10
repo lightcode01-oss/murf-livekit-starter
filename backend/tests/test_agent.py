@@ -108,3 +108,88 @@ async def test_refuses_harmful_request() -> None:
 
         # Ensures there are no function calls or other unexpected events
         result.expect.no_more_events()
+
+
+@pytest.mark.asyncio
+async def test_fetch_nearest_phc_facility_direct() -> None:
+    """Direct unit test for fetch_nearest_phc_facility tool execution."""
+    import json
+
+    assistant = Assistant(caller_id="test_user_jaipur")
+    res_str = await assistant.fetch_nearest_phc_facility(
+        context=None, district="Jaipur", facility_type="phc"
+    )
+    res = json.loads(res_str)
+
+    assert res["district"] == "Jaipur"
+    assert "data_timestamp" in res
+    assert "data_source" in res
+    assert "facilities" in res
+    assert len(res["facilities"]) > 0
+
+
+@pytest.mark.asyncio
+async def test_fetch_phc_facility_graceful_failure(monkeypatch) -> None:
+    """Test graceful failure path when live API times out."""
+    import json
+
+    import httpx
+
+    assistant = Assistant(caller_id="test_offline_user")
+
+    # Mock httpx.AsyncClient.get to raise a TimeoutException
+    async def mock_get(*args, **kwargs):
+        raise httpx.TimeoutException("Connection timed out simulating network down")
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", mock_get)
+
+    res_str = await assistant.fetch_nearest_phc_facility(
+        context=None, district="Jaipur"
+    )
+    res = json.loads(res_str)
+
+    assert res["status"] == "network_timeout_fallback"
+    assert "failure_reason" in res
+    assert "data_timestamp" in res
+    assert res["data_source"] == "Cached Government Health Facility Directory"
+    assert "spoken_guidance" in res
+    assert len(res["facilities"]) > 0
+
+
+@pytest.mark.asyncio
+async def test_tool_chaining_with_caller_memory() -> None:
+    """Test tool chaining where district is retrieved from Day 4 caller memory."""
+    import json
+
+    caller_profile = {
+        "found": True,
+        "name": "Ramesh",
+        "language_preference": "English",
+        "facts": {"district": "Lucknow", "ongoing_conditions": "asthma"},
+    }
+    assistant = Assistant(caller_id="ramesh_lucknow", caller_profile=caller_profile)
+
+    # Call tool without passing district parameter
+    res_str = await assistant.fetch_nearest_phc_facility(context=None, district="")
+    res = json.loads(res_str)
+
+    # Asserts district was auto-chained from caller memory ("Lucknow")
+    assert res["district"] == "Lucknow"
+    assert "data_timestamp" in res
+
+
+@pytest.mark.asyncio
+async def test_fetch_district_health_advisory_direct() -> None:
+    """Direct unit test for Open-Meteo district health advisory tool."""
+    import json
+
+    assistant = Assistant(caller_id="test_delhi_user")
+    res_str = await assistant.fetch_district_health_advisory(
+        context=None, district="Delhi"
+    )
+    res = json.loads(res_str)
+
+    assert res["district"] == "Delhi"
+    assert "data_timestamp" in res
+    assert "data_source" in res
+    assert "health_risk_level" in res

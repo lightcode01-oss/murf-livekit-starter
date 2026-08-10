@@ -198,6 +198,29 @@ See the Configuration section below for voice, STT, and LLM options.
 
 ---
 
+## Day 5 — Real-Time Domain Data Tools (Health Access Track)
+
+The **Jana Seva / Dr. Swasthya Sathi** voice AI agent includes real-world function calling tools that fetch live health and environmental data off the internet, handle API timeouts gracefully out loud, state explicit data timestamps, and chain with Day 4 caller memory.
+
+### 🛠️ Function Tools Implemented
+
+1. **`fetch_nearest_phc_facility(district, facility_type, user_id)`**:
+   - **Purpose**: Live lookup of nearby Primary Health Centres (PHC), Community Health Centres (CHC), District Hospitals, and Jan Aushadhi generic chemist stores.
+   - **Data Sources**:
+     - **Live API**: OpenStreetMap Nominatim Healthcare Directory search.
+     - **Local Dataset Fallback**: Embedded cached registry of government health facilities for major Indian districts (Jaipur, Lucknow, Delhi, Patna, Bhopal, etc.).
+   - **Tool Chaining (Advanced)**: If `district` is omitted by the user, the agent automatically retrieves `district` from the caller's Day 4 persistent SQLite memory without prompting again.
+   - **Data Timestamp**: Every payload includes an explicit timestamp (e.g. *"As of August 10, 2026 at 21:30 IST"*).
+   - **Spoken Failure Path**: If the live API times out, the tool catches the exception gracefully, flags `network_timeout_fallback`, and instructs the agent to state the network timeout out loud while presenting cached government registry data.
+
+2. **`fetch_district_health_advisory(district, user_id)`**:
+   - **Purpose**: Real-time environmental health advisory fetching live Air Quality Index (AQI), PM2.5, PM10, temperature, and respiratory precautions for vulnerable patients.
+   - **Data Source**: Live Open-Meteo Air Quality & Weather API (no API key required).
+   - **Data Timestamp**: Explicit live sensor measurement timestamp (e.g. *"Recorded live as of August 10, 2026"*).
+   - **Failure Path**: Graceful fallback matrix with out-loud spoken failure notification if sensors time out.
+
+---
+
 ## Configuration
 
 ### Murf voice
