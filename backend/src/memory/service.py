@@ -74,3 +74,15 @@ class MemoryService:
                 "success": False,
                 "message": "Memory service error during save operation.",
             }
+
+    def opt_out_caller(
+        self, user_id: str, reason: str = "Caller requested opt-out"
+    ) -> dict[str, Any]:
+        """Record caller opt-out preference in persistent memory so future outbound calls are prevented."""
+        if not user_id:
+            logger.warning("[MEMORY] opt_out_caller called with empty user_id")
+            return {"success": False, "message": "No valid user_id provided."}
+
+        logger.info(f"[MEMORY] Opt-out requested for caller {user_id}: '{reason}'")
+        facts = {"opted_out": True, "opt_out_reason": reason}
+        return self.save_caller_memory(user_id=user_id, facts=facts)

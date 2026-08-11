@@ -221,6 +221,50 @@ The **Jana Seva / Dr. Swasthya Sathi** voice AI agent includes real-world functi
 
 ---
 
+## Day 6 — Outbound Calls (Jana Seva Health Access)
+
+The **Jana Seva / Dr. Swasthya Sathi** agent can place automated outbound phone calls for healthcare reminder follow-ups (e.g., vaccination follow-ups, medication reminders) using Twilio Telephony and LiveKit SIP Outbound Trunking.
+
+### 📞 Outbound Features & Compliance
+
+- **Use Case**: Vaccination & Medication Reminder follow-up for approved community health beneficiaries.
+- **Telephony Provider**: Twilio REST API + LiveKit SIP Outbound Trunking.
+- **Mandatory 3-Part Opening Sentence**:
+  When the caller answers, the agent speaks the required 3-part opening sentence in the first two sentences:
+  1. *Who is calling*: "Hello, this is Jana Seva calling..."
+  2. *Why calling*: "...with a health reminder you previously requested."
+  3. *How to stop future calls*: "If you don't want these calls, just tell me and I won't call you again."
+- **Strict Opt-Out Handling**:
+  If the user asks to stop calling (e.g., "Don't call me", "Stop calling", "No more calls", "कॉल मत करना"), the agent immediately calls `opt_out_caller`, acknowledges politely, and ends the call cleanly.
+- **Call Outcome Tracking**:
+  Logs call outcomes (`ANSWERED`, `NO_ANSWER`, `BUSY`, `VOICEMAIL`, `HANGUP`, `FAILED`, `OPTED_OUT`, `REMINDER_MISSING`).
+- **Conservative Retry Limit**:
+  Maximum automatic retry count is capped at `1` retry to prevent repeated dialing or infinite retry loops.
+- **Safe Voicemail Policy**:
+  If voicemail is detected, the agent leaves only a safe non-sensitive notification without disclosing medical history or diagnoses.
+
+### 🔑 Environment Variables Required
+
+Add to `backend/.env.local`:
+```bash
+TWILIO_ACCOUNT_SID=AC_YOUR_TWILIO_ACCOUNT_SID
+TWILIO_AUTH_TOKEN=YOUR_TWILIO_AUTH_TOKEN
+TWILIO_PHONE_NUMBER=+15005550006
+OUTBOUND_DESTINATION_NUMBER=+91XXXXXXXXXX
+LIVEKIT_SIP_TRUNK_ID=ST_YOUR_LIVEKIT_SIP_TRUNK_ID
+```
+
+### 🚀 Triggering an Outbound Call
+
+```bash
+cd backend
+uv run python src/outbound_call.py --phone "+91XXXXXXXXXX" --user-id "demo_caller_ramesh"
+```
+
+> **Disclaimer**: Outbound calls are currently intended for controlled demonstration/testing and should not be used for unsolicited bulk calling.
+
+---
+
 ## Configuration
 
 ### Murf voice

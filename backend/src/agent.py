@@ -36,10 +36,12 @@ class Assistant(Agent):
         memory_service: Optional[MemoryService] = None,
         caller_id: str = "demo_caller_ramesh",
         caller_profile: Optional[dict[str, Any]] = None,
+        call_direction: str = "inbound",
     ) -> None:
         self.memory_service = memory_service or MemoryService()
         self.caller_id = caller_id
         self.caller_profile = caller_profile or {"found": False}
+        self.call_direction = call_direction
 
         # Build dynamic system instructions incorporating caller profile context
         instructions = SYSTEM_PROMPT
@@ -141,6 +143,28 @@ INSTRUCTION: Greet the caller warmly as a new caller. When the caller introduces
             facts=facts if facts else None,
         )
         logger.info(f"[MEMORY] Save result for {target_id}: {res}")
+        return json.dumps(res)
+
+    @function_tool
+    async def opt_out_caller(
+        self,
+        context: RunContext,
+        reason: str = "User requested stop calls",
+        user_id: str = "",
+    ) -> str:
+        """Register caller request to opt out of future health reminder calls and stop automated calling.
+
+        Call this tool immediately whenever the caller states they do not want calls, ask to stop calling, request removal, or opt out of reminders (e.g., "Don't call me", "Stop calling", "No more calls", "कॉल मत करना", "बंद कर दो").
+
+        Args:
+            reason: Caller's reason or statement requesting opt-out.
+            user_id: Unique caller identifier.
+        """
+        target_id = user_id or self.caller_id
+        logger.info(
+            f"[OUTBOUND] Opt-out requested for caller '{target_id}', reason: '{reason}'"
+        )
+        res = self.memory_service.opt_out_caller(user_id=target_id, reason=reason)
         return json.dumps(res)
 
     @function_tool
@@ -528,8 +552,41 @@ async def my_agent(ctx: JobContext):
         ),
     )
 
-    # Generate initial reply instruction based on caller status
-    if caller_profile.get("found"):
+    # Determine if outbound SIP or outbound room
+    is_outbound = False
+    if (
+        remote_p and remote_p.kind == rtc.ParticipantKind.PARTICIPANT_KIND_SIP
+    ) or "outbound" in ctx.room.name.lower():
+        is_outbound = True
+
+    # Check caller opt-out status
+    if caller_profile.get("found") and caller_profile.get("facts", {}).get("opted_out"):
+        logger.warning(
+            f"[OUTBOUND] Connected caller '{caller_id}' has opted out. Delivering opt-out statement."
+        )
+        optout_instruction = "OPT-OUT CALLER: State politely in 1 sentence that health reminder calls have been stopped per their request, then conclude."
+        await session.generate_reply(instructions=optout_instruction)
+        return
+
+    # Generate initial reply instruction based on call direction and caller status
+    if is_outbound:
+        lang_pref = (
+            caller_profile.get("language_preference") or "English"
+            if caller_profile.get("found")
+            else "English"
+        )
+        logger.info(f"[OUTBOUND] Delivering mandatory 3-part opening in {lang_pref}")
+        if lang_pref.lower() == "hindi":
+            greeting_instruction = (
+                "OUTBOUND CALL MANDATORY OPENING: Speak the following 3-part opening in Hindi using Devanagari script: "
+                "'नमस्ते, मैं Jana Seva से कॉल कर रहा हूँ। यह आपके स्वास्थ्य reminder के बारे में एक follow-up call है; अगर आप ऐसे calls नहीं चाहते हैं, तो मुझे बता दें और मैं इसे बंद कर दूँगा।'"
+            )
+        else:
+            greeting_instruction = (
+                "OUTBOUND CALL MANDATORY OPENING: Speak the following 3-part opening in English: "
+                "'Hello, this is Jana Seva calling with a health reminder you previously requested. If you don't want these calls, just tell me and I won't call you again.'"
+            )
+    elif caller_profile.get("found"):
         caller_name = caller_profile.get("name") or "User"
         lang_pref = caller_profile.get("language_preference") or "English"
         facts = caller_profile.get("facts", {})
