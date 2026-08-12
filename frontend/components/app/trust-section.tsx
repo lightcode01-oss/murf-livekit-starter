@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, Mic, Accessibility, ShieldCheck } from 'lucide-react';
+import { Accessibility, Mic, ShieldCheck, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/shadcn/utils';
 
 interface TrustSectionProps {
@@ -28,33 +28,36 @@ export function TrustSection({ className }: TrustSectionProps) {
   ];
 
   return (
-    <section className={cn('py-12 bg-muted/40 rounded-3xl p-8 border border-border/60 space-y-8', className)}>
-      <div className="text-center space-y-3 max-w-xl mx-auto">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-500/20">
+    <section
+      className={cn(
+        'bg-muted/40 border-border/60 space-y-8 rounded-3xl border p-8 py-12',
+        className
+      )}
+    >
+      <div className="mx-auto max-w-xl space-y-3 text-center">
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
           <ShieldCheck className="size-3.5" />
           <span>Public Service Mission</span>
         </div>
-        <h2 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
+        <h2 className="text-foreground text-2xl font-extrabold tracking-tight md:text-3xl">
           Built for Bharat 🇮🇳
         </h2>
-        <p className="text-xs md:text-sm text-muted-foreground font-medium leading-relaxed">
+        <p className="text-muted-foreground text-xs leading-relaxed font-medium md:text-sm">
           Bridging the healthcare access gap with accessible AI technology for every Indian citizen.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+      <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-3">
         {pillars.map((p) => (
           <div
             key={p.title}
-            className="bg-background/90 border-border/70 rounded-2xl p-5 border shadow-xs text-center space-y-3 hover:border-amber-500/30 transition-colors"
+            className="bg-background/90 border-border/70 space-y-3 rounded-2xl border p-5 text-center shadow-xs transition-colors hover:border-amber-500/30"
           >
-            <div className="size-12 rounded-xl bg-muted mx-auto flex items-center justify-center">
+            <div className="bg-muted mx-auto flex size-12 items-center justify-center rounded-xl">
               {p.icon}
             </div>
-            <h3 className="font-extrabold text-sm text-foreground">{p.title}</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed font-medium">
-              {p.desc}
-            </p>
+            <h3 className="text-foreground text-sm font-extrabold">{p.title}</h3>
+            <p className="text-muted-foreground text-xs leading-relaxed font-medium">{p.desc}</p>
           </div>
         ))}
       </div>

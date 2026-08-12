@@ -86,3 +86,51 @@ class MemoryService:
         logger.info(f"[MEMORY] Opt-out requested for caller {user_id}: '{reason}'")
         facts = {"opted_out": True, "opt_out_reason": reason}
         return self.save_caller_memory(user_id=user_id, facts=facts)
+
+    def create_escalation(
+        self,
+        reference_id: str,
+        reason: str,
+        urgency: str,
+        user_name: str,
+        summary: str,
+        agent_checked: str,
+        language: str,
+        preferred_followup: str,
+        permission_confirmed: bool = True,
+        status: str = "open",
+    ) -> Optional[dict[str, Any]]:
+        """Create a human support escalation record."""
+        return self.db.create_escalation(
+            reference_id=reference_id,
+            reason=reason,
+            urgency=urgency,
+            user_name=user_name,
+            summary=summary,
+            agent_checked=agent_checked,
+            language=language,
+            preferred_followup=preferred_followup,
+            permission_confirmed=permission_confirmed,
+            status=status,
+        )
+
+    def get_escalations(
+        self,
+        urgency: Optional[str] = None,
+        status: Optional[str] = None,
+        search: Optional[str] = None,
+    ) -> list[dict[str, Any]]:
+        """Fetch escalation records."""
+        return self.db.get_escalations(urgency=urgency, status=status, search=search)
+
+    def get_escalation_by_ref(self, reference_id: str) -> Optional[dict[str, Any]]:
+        """Fetch single escalation by reference_id."""
+        return self.db.get_escalation_by_ref(reference_id)
+
+    def update_escalation_status(self, reference_id: str, status: str) -> bool:
+        """Update status of an escalation."""
+        return self.db.update_escalation_status(reference_id, status)
+
+    def seed_demo_escalations(self) -> list[dict[str, Any]]:
+        """Seed sample escalation records for Day 7 demonstration."""
+        return self.db.seed_demo_escalations()

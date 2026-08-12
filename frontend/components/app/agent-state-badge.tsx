@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
+import { Brain, CheckCircle2, Loader2, Mic, PhoneOff, Volume2 } from 'lucide-react';
 import { type AgentState } from '@livekit/components-react';
-import { Mic, Volume2, Brain, Loader2, CheckCircle2, PhoneOff } from 'lucide-react';
 import { cn } from '@/lib/shadcn/utils';
 
 interface AgentStateBadgeProps {
@@ -18,7 +18,8 @@ export function AgentStateBadge({ state = 'ready', className }: AgentStateBadgeP
           label: 'Ready to connect',
           subtext: 'Click Start Health Consultation to begin',
           icon: <CheckCircle2 className="size-4 text-emerald-500" />,
-          colorClass: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+          colorClass:
+            'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
           pulse: false,
         };
       case 'connecting':
@@ -37,17 +38,18 @@ export function AgentStateBadge({ state = 'ready', className }: AgentStateBadgeP
           icon: (
             <span className="relative flex size-3 items-center justify-center">
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <Mic className="size-3.5 text-emerald-600 dark:text-emerald-400 relative z-10" />
+              <Mic className="relative z-10 size-3.5 text-emerald-600 dark:text-emerald-400" />
             </span>
           ),
-          colorClass: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border-emerald-500/30 ring-2 ring-emerald-500/20',
+          colorClass:
+            'bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border-emerald-500/30 ring-2 ring-emerald-500/20',
           pulse: true,
         };
       case 'thinking':
         return {
           label: 'Swasthya Sathi is thinking...',
           subtext: 'Analyzing symptoms & health guidelines',
-          icon: <Brain className="size-4 text-sky-500 animate-pulse" />,
+          icon: <Brain className="size-4 animate-pulse text-sky-500" />,
           colorClass: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20',
           pulse: true,
         };
@@ -58,10 +60,11 @@ export function AgentStateBadge({ state = 'ready', className }: AgentStateBadgeP
           icon: (
             <span className="relative flex size-3 items-center justify-center">
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-indigo-400 opacity-75" />
-              <Volume2 className="size-3.5 text-indigo-600 dark:text-indigo-400 relative z-10" />
+              <Volume2 className="relative z-10 size-3.5 text-indigo-600 dark:text-indigo-400" />
             </span>
           ),
-          colorClass: 'bg-indigo-500/15 text-indigo-800 dark:text-indigo-200 border-indigo-500/30 ring-2 ring-indigo-500/20',
+          colorClass:
+            'bg-indigo-500/15 text-indigo-800 dark:text-indigo-200 border-indigo-500/30 ring-2 ring-indigo-500/20',
           pulse: true,
         };
       case 'disconnected':
@@ -76,7 +79,7 @@ export function AgentStateBadge({ state = 'ready', className }: AgentStateBadgeP
         return {
           label: 'Swasthya Sathi Active',
           subtext: 'Voice health assistant',
-          icon: <Mic className="size-4 text-primary" />,
+          icon: <Mic className="text-primary size-4" />,
           colorClass: 'bg-primary/10 text-primary border-primary/20',
           pulse: false,
         };
@@ -88,15 +91,17 @@ export function AgentStateBadge({ state = 'ready', className }: AgentStateBadgeP
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-2.5 rounded-full border px-4 py-2 text-xs font-semibold shadow-xs transition-all duration-300 backdrop-blur-md',
+        'inline-flex items-center gap-2.5 rounded-full border px-4 py-2 text-xs font-semibold shadow-xs backdrop-blur-md transition-all duration-300',
         badge.colorClass,
         className
       )}
     >
       <div className="flex shrink-0 items-center justify-center">{badge.icon}</div>
       <div className="flex flex-col text-left">
-        <span className="font-bold leading-none tracking-tight">{badge.label}</span>
-        <span className="text-[10px] font-medium opacity-80 leading-tight mt-0.5">{badge.subtext}</span>
+        <span className="leading-none font-bold tracking-tight">{badge.label}</span>
+        <span className="mt-0.5 text-[10px] leading-tight font-medium opacity-80">
+          {badge.subtext}
+        </span>
       </div>
     </div>
   );

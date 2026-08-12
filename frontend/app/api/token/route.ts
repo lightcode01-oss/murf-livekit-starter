@@ -48,8 +48,7 @@ export async function POST(req: Request) {
 
     // Determine participant identity (support user_id override or stable demo identity)
     const participantName = 'user';
-    const participantIdentity =
-      queryUserId || body?.user_id || 'demo_caller_ramesh';
+    const participantIdentity = queryUserId || body?.user_id || 'demo_caller_ramesh';
     const roomName = `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
 
     const participantToken = await createParticipantToken(

@@ -1,5 +1,6 @@
 import json
 import logging
+import random
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -24,6 +25,7 @@ from livekit.plugins.turn_detector.multilingual import MultilingualModel
 from health_data import get_cached_facilities, get_district_coords
 from memory.service import MemoryService
 from prompt import SYSTEM_PROMPT
+from sanitizer import sanitize_text
 
 logger = logging.getLogger("agent")
 
@@ -166,6 +168,107 @@ INSTRUCTION: Greet the caller warmly as a new caller. When the caller introduces
         )
         res = self.memory_service.opt_out_caller(user_id=target_id, reason=reason)
         return json.dumps(res)
+
+    @function_tool
+    async def create_escalation(
+        self,
+        context: RunContext,
+        reason: str,
+        urgency: str = "high",
+        user_name: str = "Caller",
+        summary: str = "",
+        agent_checked: str = "",
+        language: str = "English",
+        preferred_followup: str = "Phone",
+        permission_confirmed: bool = False,
+        user_id: str = "",
+    ) -> str:
+        """Create a human-support escalation request for red-flag symptoms or diagnosis requests AFTER receiving explicit caller permission.
+
+        IMPORTANT: This tool MUST ONLY be called if permission_confirmed is True. The caller MUST have explicitly granted permission after being told what will be shared.
+
+        Args:
+            reason: Reason for escalation ('Red-flag symptoms' or 'Diagnosis request').
+            urgency: Urgency level ('emergency' for red-flag symptoms, 'high' for diagnosis/judgment, 'medium', or 'low').
+            user_name: Name of caller or person needing help (e.g. Ramesh or Caller).
+            summary: Concise structured summary of what happened (sanitized of private tokens).
+            agent_checked: What the agent already checked or identified.
+            language: Caller's spoken language (e.g. English, Hindi, Hinglish).
+            preferred_followup: Preferred follow-up method (e.g. Phone, SMS).
+            permission_confirmed: MUST be True. Set to True ONLY after explicit caller consent ("Yes", "Sure", "हाँ").
+            user_id: Caller identifier.
+        """
+        logger.info(
+            f"[ESCALATION] create_escalation called: reason='{reason}', urgency='{urgency}', permission_confirmed={permission_confirmed}"
+        )
+
+        # STRICT SAFETY GUARD: Abort if explicit caller permission is not confirmed
+        if not permission_confirmed:
+            logger.warning(
+                "[ESCALATION] ABORTED: Explicit permission_confirmed is False"
+            )
+            return json.dumps(
+                {
+                    "status": "aborted",
+                    "error": "ESCALATION REJECTED: Explicit user permission was not confirmed. permission_confirmed must be True to proceed. Ask the caller for explicit permission before escalating.",
+                }
+            )
+
+        # Sanitization layer to scrub private details
+        clean_summary = sanitize_text(summary)
+        clean_agent_checked = sanitize_text(agent_checked)
+        clean_user_name = sanitize_text(user_name or "Caller")
+
+        # Generate unique collision-free Reference ID format: JS-2026-XXXX
+        random_num = random.randint(1000, 9999)
+        ref_id = f"JS-2026-{random_num:04d}"
+
+        # Guarantee uniqueness in database
+        while self.memory_service.get_escalation_by_ref(ref_id) is not None:
+            random_num = random.randint(1000, 9999)
+            ref_id = f"JS-2026-{random_num:04d}"
+
+        res = self.memory_service.create_escalation(
+            reference_id=ref_id,
+            reason=reason,
+            urgency=urgency,
+            user_name=clean_user_name,
+            summary=clean_summary,
+            agent_checked=clean_agent_checked,
+            language=language,
+            preferred_followup=preferred_followup,
+            permission_confirmed=True,
+            status="open",
+        )
+
+        if res:
+            logger.info(
+                f"[ESCALATION] Successfully created escalation record: {ref_id}"
+            )
+            return json.dumps(
+                {
+                    "status": "created",
+                    "reference_id": ref_id,
+                    "urgency": urgency.lower(),
+                    "permission_status": "Granted",
+                    "message": f"Escalation successfully logged with reference ID {ref_id}.",
+                    "next_step_guidance": (
+                        f"Provide reference ID {ref_id} to the caller out loud. "
+                        "Explain honestly that a human support representative can review the request, "
+                        "but state clearly that you cannot guarantee an immediate response."
+                    ),
+                }
+            )
+        else:
+            logger.error(
+                f"[ESCALATION] Failed to create escalation record for {ref_id}"
+            )
+            return json.dumps(
+                {
+                    "status": "error",
+                    "error": "Database error while storing escalation record.",
+                }
+            )
 
     @function_tool
     async def triage_symptom(

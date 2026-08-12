@@ -35,7 +35,8 @@ export interface AppConfig {
 export const APP_CONFIG_DEFAULTS: AppConfig = {
   companyName: 'JANA SEVA',
   pageTitle: 'JANA SEVA — Healthcare, in your voice | Voice of Bharat',
-  pageDescription: 'AI Voice Assistant for public health access, hospital lookup, schemes & medicine guidance in India',
+  pageDescription:
+    'AI Voice Assistant for public health access, hospital lookup, schemes & medicine guidance in India',
 
   supportsChatInput: true,
   supportsVideoInput: true,

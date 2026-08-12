@@ -1,21 +1,21 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  X,
-  Mic,
-  Volume2,
   Brain,
-  Navigation,
   MapPin,
+  Mic,
+  Navigation,
   PhoneCall,
   RotateCcw,
   Sparkles,
+  Volume2,
   VolumeX,
+  X,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { VoiceOrb, type VoiceOrbState } from '@/components/app/voice-orb';
 import { JanaSevaAvatar } from '@/components/app/jana-seva-avatar';
+import { VoiceOrb, type VoiceOrbState } from '@/components/app/voice-orb';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/shadcn/utils';
 
 export interface DemoResponseData {
@@ -51,7 +51,8 @@ export function VoiceModal({
   const sampleResponses: Record<string, DemoResponseData> = {
     hospital: {
       userQuery: 'Mere paas government hospital kahan hai?',
-      assistantReply: 'Aapke nazdeek sabse paas District Community Health Centre 2.4 km door hai. Yahan 24/7 Emergency, OPD, aur Jan Aushadhi generic chemist available hai.',
+      assistantReply:
+        'Aapke nazdeek sabse paas District Community Health Centre 2.4 km door hai. Yahan 24/7 Emergency, OPD, aur Jan Aushadhi generic chemist available hai.',
       locationTitle: 'District Community Health Centre (CHC)',
       distance: '2.4 km • 8 min drive',
       address: 'Station Road, Near Gram Panchayat Office, Sector 4',
@@ -62,7 +63,8 @@ export function VoiceModal({
     },
     vaccination: {
       userQuery: 'Vaccination centre kaise milega?',
-      assistantReply: 'Aapke ilake mein Primary Health Centre (PHC) mein har Budhvar ko regular immunization booth lagta hai. Polio aur Routine child vaccines bilkul free hain.',
+      assistantReply:
+        'Aapke ilake mein Primary Health Centre (PHC) mein har Budhvar ko regular immunization booth lagta hai. Polio aur Routine child vaccines bilkul free hain.',
       locationTitle: 'Primary Health Centre (PHC) Vaccination Booth',
       distance: '1.2 km • Open Today 9 AM - 4 PM',
       address: 'Main Health Block, Primary Health Centre',
@@ -73,7 +75,8 @@ export function VoiceModal({
     },
     schemes: {
       userQuery: 'Ayushman Bharat ke liye kya chahiye?',
-      assistantReply: 'Ayushman Bharat (PM-JAY) card ke liye Ration Card ya SECC ID required hai. Isse family ko har saal 5 Lakh rupees tak free ilaaj milta hai. Aap nearest CSC center par card banwa sakte hain.',
+      assistantReply:
+        'Ayushman Bharat (PM-JAY) card ke liye Ration Card ya SECC ID required hai. Isse family ko har saal 5 Lakh rupees tak free ilaaj milta hai. Aap nearest CSC center par card banwa sakte hain.',
       locationTitle: 'Ayushman Bharat (PM-JAY) Help Desk',
       distance: 'Free Coverage Up to ₹5 Lakh/Family',
       address: 'Nearest Common Service Centre (CSC) or CHC Hospital',
@@ -84,7 +87,8 @@ export function VoiceModal({
     },
     default: {
       userQuery: 'Mere paas government health service kahan hai?',
-      assistantReply: 'Jana Seva aapko nearest government hospital, Jan Aushadhi generic medicines, aur free health scheme access mein madad karta hai.',
+      assistantReply:
+        'Jana Seva aapko nearest government hospital, Jan Aushadhi generic medicines, aur free health scheme access mein madad karta hai.',
       locationTitle: 'Jan Seva Community Health Center',
       distance: '1.8 km nearby',
       address: 'Government Civil Hospital Compound',
@@ -112,7 +116,8 @@ export function VoiceModal({
         // Match response
         let resp = sampleResponses.hospital;
         if (q.toLowerCase().includes('vaccin')) resp = sampleResponses.vaccination;
-        else if (q.toLowerCase().includes('ayushman') || q.toLowerCase().includes('scheme')) resp = sampleResponses.schemes;
+        else if (q.toLowerCase().includes('ayushman') || q.toLowerCase().includes('scheme'))
+          resp = sampleResponses.schemes;
 
         resp.userQuery = q;
         setResponseData(resp);
@@ -154,12 +159,12 @@ export function VoiceModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-xl p-4 md:p-8 animate-in fade-in duration-300 overflow-y-auto">
+    <div className="bg-background/95 animate-in fade-in fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 backdrop-blur-xl duration-300 md:p-8">
       {/* Top Header Controls */}
-      <div className="absolute top-4 left-4 right-4 md:top-6 md:left-8 md:right-8 flex items-center justify-between z-20">
+      <div className="absolute top-4 right-4 left-4 z-20 flex items-center justify-between md:top-6 md:right-8 md:left-8">
         <div className="flex items-center gap-2">
-          <span className="size-3 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+          <span className="size-3 animate-pulse rounded-full bg-emerald-500" />
+          <span className="text-foreground text-xs font-bold tracking-wider uppercase">
             JANA SEVA Voice Session
           </span>
         </div>
@@ -168,7 +173,7 @@ export function VoiceModal({
           onClick={onClose}
           variant="outline"
           size="icon-sm"
-          className="rounded-full size-9 bg-background/80 hover:bg-muted cursor-pointer"
+          className="bg-background/80 hover:bg-muted size-9 cursor-pointer rounded-full"
         >
           <X className="size-5" />
           <span className="sr-only">Close</span>
@@ -176,37 +181,37 @@ export function VoiceModal({
       </div>
 
       {/* Main Workspace Flow */}
-      <div className="w-full max-w-3xl mx-auto py-12 flex flex-col items-center justify-center text-center space-y-8 my-auto">
+      <div className="mx-auto my-auto flex w-full max-w-3xl flex-col items-center justify-center space-y-8 py-12 text-center">
         {/* Avatar & Voice Orb Display */}
         <div className="relative flex items-center justify-center pt-6">
           <JanaSevaAvatar state={orbState} size="xl" showDetails={false} />
         </div>
 
         {/* State Indicators */}
-        <div className="space-y-2 max-w-md">
+        <div className="max-w-md space-y-2">
           {orbState === 'listening' && (
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold text-xs border border-amber-500/30 animate-pulse">
+            <div className="inline-flex animate-pulse items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/15 px-4 py-2 text-xs font-bold text-amber-700 dark:text-amber-300">
               <Mic className="size-4 animate-bounce" />
               <span>I&apos;m listening… Speak naturally</span>
             </div>
           )}
 
           {orbState === 'thinking' && (
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 font-bold text-xs border border-sky-500/30 animate-pulse">
-              <Brain className="size-4 animate-spin-slow" />
+            <div className="inline-flex animate-pulse items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/15 px-4 py-2 text-xs font-bold text-sky-700 dark:text-sky-300">
+              <Brain className="animate-spin-slow size-4" />
               <span>Let me understand that… Searching health database</span>
             </div>
           )}
 
           {orbState === 'speaking' && (
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-500/30">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-4 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300">
               <Volume2 className="size-4 animate-bounce text-emerald-600" />
               <span>Swasthya Sathi is speaking…</span>
             </div>
           )}
 
           {orbState === 'idle' && responseData && (
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-500/15 text-teal-700 dark:text-teal-300 font-bold text-xs border border-teal-500/30">
+            <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/15 px-4 py-2 text-xs font-bold text-teal-700 dark:text-teal-300">
               <Sparkles className="size-4 text-teal-600" />
               <span>Response Ready</span>
             </div>
@@ -215,41 +220,41 @@ export function VoiceModal({
 
         {/* USER SAID TRANSCRIPT */}
         {transcript && (
-          <div className="bg-muted/70 border-border/60 rounded-2xl p-4 border max-w-lg w-full text-left space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+          <div className="bg-muted/70 border-border/60 w-full max-w-lg space-y-1 rounded-2xl border p-4 text-left">
+            <span className="text-muted-foreground block text-[10px] font-bold tracking-wider uppercase">
               👤 You Said:
             </span>
-            <p className="text-sm font-semibold text-foreground">“{transcript}”</p>
+            <p className="text-foreground text-sm font-semibold">“{transcript}”</p>
           </div>
         )}
 
         {/* RESPONSE CARD (Section 17) */}
         {responseData && (
-          <div className="bg-card border-border rounded-3xl p-6 border shadow-2xl max-w-lg w-full text-left space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-card border-border animate-in fade-in slide-in-from-bottom-4 w-full max-w-lg space-y-5 rounded-3xl border p-6 text-left shadow-2xl duration-300">
             {/* JANA SEVA REPLIES */}
             <div className="space-y-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block flex items-center gap-1">
+              <span className="block flex items-center gap-1 text-[10px] font-bold tracking-wider text-emerald-600 uppercase dark:text-emerald-400">
                 <Sparkles className="size-3" /> JANA SEVA REPLIES:
               </span>
-              <p className="text-xs md:text-sm font-medium leading-relaxed text-foreground">
+              <p className="text-foreground text-xs leading-relaxed font-medium md:text-sm">
                 {responseData.assistantReply}
               </p>
             </div>
 
             {/* LOCATION / RESULT CARD */}
             {responseData.locationTitle && (
-              <div className="bg-muted/60 rounded-2xl p-4 border border-border/60 space-y-2">
+              <div className="bg-muted/60 border-border/60 space-y-2 rounded-2xl border p-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                    <MapPin className="size-4 text-amber-600 shrink-0" />
+                  <span className="text-foreground flex items-center gap-1.5 text-xs font-bold">
+                    <MapPin className="size-4 shrink-0 text-amber-600" />
                     {responseData.locationTitle}
                   </span>
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                  <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-extrabold text-amber-700 dark:text-amber-300">
                     {responseData.distance}
                   </span>
                 </div>
                 {responseData.address && (
-                  <p className="text-[11px] text-muted-foreground font-medium">
+                  <p className="text-muted-foreground text-[11px] font-medium">
                     {responseData.address}
                   </p>
                 )}
@@ -262,9 +267,13 @@ export function VoiceModal({
                 onClick={handleHearResponse}
                 variant="outline"
                 size="sm"
-                className="rounded-full text-xs font-bold gap-1.5 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10"
+                className="gap-1.5 rounded-full border-emerald-500/30 text-xs font-bold text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
               >
-                {isPlayingAudio ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}
+                {isPlayingAudio ? (
+                  <VolumeX className="size-3.5" />
+                ) : (
+                  <Volume2 className="size-3.5" />
+                )}
                 <span>{isPlayingAudio ? 'Playing Audio...' : '🎙️ Hear Response'}</span>
               </Button>
 
@@ -273,7 +282,7 @@ export function VoiceModal({
                   onClick={() => startDemoFlow('Mere paas government hospital kahan hai?')}
                   variant="outline"
                   size="sm"
-                  className="rounded-full text-xs font-semibold gap-1"
+                  className="gap-1 rounded-full text-xs font-semibold"
                 >
                   <RotateCcw className="size-3.5" />
                   <span>Try Again</span>
@@ -281,7 +290,7 @@ export function VoiceModal({
                 <Button
                   onClick={() => startDemoFlow()}
                   size="sm"
-                  className="rounded-full text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white gap-1"
+                  className="gap-1 rounded-full bg-amber-600 text-xs font-bold text-white hover:bg-amber-700"
                 >
                   <Mic className="size-3.5" />
                   <span>Ask Another Question</span>
@@ -292,11 +301,11 @@ export function VoiceModal({
         )}
 
         {/* TAP TO RE-SPEAK OR CONNECT LIVE AGENT CTA */}
-        <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
           <Button
             onClick={() => startDemoFlow()}
             size="lg"
-            className="px-6 py-6 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-mono text-xs font-bold tracking-wider uppercase shadow-xl shadow-amber-600/25 gap-2 cursor-pointer"
+            className="cursor-pointer gap-2 rounded-full bg-amber-600 px-6 py-6 font-mono text-xs font-bold tracking-wider text-white uppercase shadow-xl shadow-amber-600/25 hover:bg-amber-700"
           >
             <Mic className="size-4 animate-pulse" />
             <span>Try Interactive Voice Demo</span>
@@ -309,7 +318,7 @@ export function VoiceModal({
                 onLiveStart();
               }}
               size="lg"
-              className="px-6 py-6 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-mono text-xs font-bold tracking-wider uppercase shadow-xl shadow-emerald-600/25 gap-2 cursor-pointer"
+              className="cursor-pointer gap-2 rounded-full bg-emerald-600 px-6 py-6 font-mono text-xs font-bold tracking-wider text-white uppercase shadow-xl shadow-emerald-600/25 hover:bg-emerald-700"
             >
               <Sparkles className="size-4 animate-pulse" />
               <span>Connect Live Agent (Real Voice)</span>

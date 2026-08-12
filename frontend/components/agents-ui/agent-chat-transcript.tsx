@@ -64,7 +64,7 @@ export function AgentChatTranscript({
           return (
             <Message key={id} title={title} from={messageOrigin}>
               <MessageContent>
-                <span className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground/80 mb-0.5 block">
+                <span className="text-muted-foreground/80 mb-0.5 block text-[10px] font-bold tracking-wider uppercase">
                   {from?.isLocal ? '👤 You (Patient / ASHA)' : '🩺 Swasthya Sathi'}
                 </span>
                 <MessageResponse>{message}</MessageResponse>

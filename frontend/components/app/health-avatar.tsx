@@ -2,8 +2,8 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { Brain, CheckCircle2, Mic, ShieldAlert, Stethoscope, Volume2 } from 'lucide-react';
 import { type AgentState } from '@livekit/components-react';
-import { Stethoscope, Mic, Volume2, Brain, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/shadcn/utils';
 
 interface HealthAvatarProps {
@@ -35,14 +35,16 @@ export function HealthAvatar({
   const containerSizes = avatarSizes[size] || avatarSizes.lg;
 
   return (
-    <div className={cn('flex flex-col items-center justify-center text-center space-y-3', className)}>
+    <div
+      className={cn('flex flex-col items-center justify-center space-y-3 text-center', className)}
+    >
       {/* Outer Pulse Rings & Avatar Wrapper */}
       <div className="relative flex items-center justify-center">
         {/* Animated Soundwave Rings when Listening */}
         {isListening && (
           <>
-            <span className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping opacity-75 ring-4 ring-emerald-500/40" />
-            <span className="absolute -inset-4 rounded-full border-2 border-emerald-500/40 animate-pulse" />
+            <span className="absolute inset-0 animate-ping rounded-full bg-emerald-500/20 opacity-75 ring-4 ring-emerald-500/40" />
+            <span className="absolute -inset-4 animate-pulse rounded-full border-2 border-emerald-500/40" />
             <span className="absolute -inset-8 rounded-full border border-emerald-500/20" />
           </>
         )}
@@ -50,29 +52,29 @@ export function HealthAvatar({
         {/* Animated Aura Waves when Speaking */}
         {isSpeaking && (
           <>
-            <span className="absolute inset-0 rounded-full bg-indigo-500/30 animate-pulse ring-8 ring-indigo-500/20" />
-            <span className="absolute -inset-4 rounded-full border-2 border-indigo-500/50 animate-ping duration-1000" />
-            <span className="absolute -inset-8 rounded-full border border-teal-500/30 animate-pulse" />
+            <span className="absolute inset-0 animate-pulse rounded-full bg-indigo-500/30 ring-8 ring-indigo-500/20" />
+            <span className="absolute -inset-4 animate-ping rounded-full border-2 border-indigo-500/50 duration-1000" />
+            <span className="absolute -inset-8 animate-pulse rounded-full border border-teal-500/30" />
           </>
         )}
 
         {/* Spinning Ring when Thinking */}
         {isThinking && (
-          <span className="absolute -inset-3 rounded-full border-4 border-dashed border-sky-500/60 animate-spin" />
+          <span className="absolute -inset-3 animate-spin rounded-full border-4 border-dashed border-sky-500/60" />
         )}
 
         {/* Connecting Ring */}
         {isConnecting && (
-          <span className="absolute -inset-3 rounded-full border-4 border-amber-500/40 animate-pulse" />
+          <span className="absolute -inset-3 animate-pulse rounded-full border-4 border-amber-500/40" />
         )}
 
         {/* Main Avatar Card Container */}
         <div
           className={cn(
-            'relative rounded-full overflow-hidden border-4 bg-gradient-to-b from-teal-500/20 to-emerald-600/20 shadow-2xl transition-all duration-300',
+            'relative overflow-hidden rounded-full border-4 bg-gradient-to-b from-teal-500/20 to-emerald-600/20 shadow-2xl transition-all duration-300',
             containerSizes,
-            isListening && 'border-emerald-500 ring-4 ring-emerald-500/30 scale-105',
-            isSpeaking && 'border-indigo-500 ring-4 ring-indigo-500/40 scale-105',
+            isListening && 'scale-105 border-emerald-500 ring-4 ring-emerald-500/30',
+            isSpeaking && 'scale-105 border-indigo-500 ring-4 ring-indigo-500/40',
             isThinking && 'border-sky-500 ring-4 ring-sky-500/20',
             !isListening && !isSpeaking && !isThinking && 'border-teal-500/40 hover:border-teal-500'
           )}
@@ -89,10 +91,10 @@ export function HealthAvatar({
         {/* Corner Status Badge Icon */}
         <div
           className={cn(
-            'absolute -bottom-1 -right-1 size-10 rounded-full flex items-center justify-center text-white border-2 border-background shadow-lg transition-all duration-300',
-            isListening && 'bg-emerald-500 scale-110 ring-4 ring-emerald-500/30',
-            isSpeaking && 'bg-indigo-600 scale-110 ring-4 ring-indigo-500/30',
-            isThinking && 'bg-sky-500 animate-pulse',
+            'border-background absolute -right-1 -bottom-1 flex size-10 items-center justify-center rounded-full border-2 text-white shadow-lg transition-all duration-300',
+            isListening && 'scale-110 bg-emerald-500 ring-4 ring-emerald-500/30',
+            isSpeaking && 'scale-110 bg-indigo-600 ring-4 ring-indigo-500/30',
+            isThinking && 'animate-pulse bg-sky-500',
             !isListening && !isSpeaking && !isThinking && 'bg-teal-600'
           )}
         >
@@ -101,7 +103,7 @@ export function HealthAvatar({
           ) : isSpeaking ? (
             <Volume2 className="size-5 animate-bounce" />
           ) : isThinking ? (
-            <Brain className="size-5 animate-spin-slow" />
+            <Brain className="animate-spin-slow size-5" />
           ) : (
             <Stethoscope className="size-5" />
           )}
@@ -112,13 +114,13 @@ export function HealthAvatar({
       {showDetails && (
         <div className="space-y-1">
           <div className="flex items-center justify-center gap-1.5">
-            <h3 className="font-bold text-base md:text-lg text-foreground flex items-center gap-1.5">
+            <h3 className="text-foreground flex items-center gap-1.5 text-base font-bold md:text-lg">
               Dr. Swasthya Sathi
-              <CheckCircle2 className="size-4 text-teal-500 fill-teal-500/20" />
+              <CheckCircle2 className="size-4 fill-teal-500/20 text-teal-500" />
             </h3>
           </div>
-          <p className="text-xs text-muted-foreground font-medium flex items-center justify-center gap-1">
-            <span className="size-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
+          <p className="text-muted-foreground flex items-center justify-center gap-1 text-xs font-medium">
+            <span className="inline-block size-2 animate-pulse rounded-full bg-emerald-500" />
             AI Health & ASHA Assistant
           </p>
         </div>

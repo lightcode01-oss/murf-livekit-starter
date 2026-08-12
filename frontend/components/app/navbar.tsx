@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Sparkles, Menu, X, HeartPulse, MessageSquare, PhoneCall } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { HeartPulse, Menu, MessageSquare, PhoneCall, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/shadcn/utils';
 
@@ -39,67 +39,67 @@ export function Navbar({ onStartVoice, onNavigateSection }: NavbarProps) {
       className={cn(
         'sticky top-0 z-50 w-full transition-all duration-300',
         isScrolled
-          ? 'bg-background/80 backdrop-blur-md border-b border-border/60 shadow-xs py-3'
+          ? 'bg-background/80 border-border/60 border-b py-3 shadow-xs backdrop-blur-md'
           : 'bg-transparent py-4'
       )}
     >
-      <div className="max-w-6xl mx-auto px-4 md:px-8 flex items-center justify-between">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 md:px-8">
         {/* LOGO (Speech Bubble + Cross + Pulse) */}
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNav('hero')}>
+        <div className="flex cursor-pointer items-center gap-3" onClick={() => handleNav('hero')}>
           <div className="relative flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/20">
             <MessageSquare className="size-6 text-white" />
-            <HeartPulse className="absolute size-3.5 text-white stroke-[2.5]" />
+            <HeartPulse className="absolute size-3.5 stroke-[2.5] text-white" />
           </div>
 
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-lg md:text-xl tracking-tight text-foreground font-sans">
+              <span className="text-foreground font-sans text-lg font-extrabold tracking-tight md:text-xl">
                 JANA SEVA
               </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+              <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
                 🇮🇳 Voice of Bharat
               </span>
             </div>
-            <span className="text-[10px] font-semibold text-muted-foreground tracking-wide leading-none">
+            <span className="text-muted-foreground text-[10px] leading-none font-semibold tracking-wide">
               Public Health Access Assistant
             </span>
           </div>
         </div>
 
         {/* CENTER NAV LINKS */}
-        <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-muted-foreground">
+        <nav className="text-muted-foreground hidden items-center gap-8 text-xs font-semibold md:flex">
           <button
             onClick={() => handleNav('hero')}
-            className="hover:text-foreground transition-colors cursor-pointer"
+            className="hover:text-foreground cursor-pointer transition-colors"
           >
             Home
           </button>
           <button
             onClick={() => handleNav('categories')}
-            className="hover:text-foreground transition-colors cursor-pointer"
+            className="hover:text-foreground cursor-pointer transition-colors"
           >
             Health Access
           </button>
           <button
             onClick={() => handleNav('how-it-works')}
-            className="hover:text-foreground transition-colors cursor-pointer"
+            className="hover:text-foreground cursor-pointer transition-colors"
           >
             How It Works
           </button>
           <button
             onClick={() => handleNav('languages')}
-            className="hover:text-foreground transition-colors cursor-pointer"
+            className="hover:text-foreground cursor-pointer transition-colors"
           >
             Languages
           </button>
         </nav>
 
         {/* RIGHT CTA BUTTON */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden items-center gap-3 md:flex">
           <Button
             onClick={onStartVoice}
             size="default"
-            className="rounded-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-5 py-2.5 shadow-md shadow-amber-600/20 gap-2 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+            className="cursor-pointer gap-2 rounded-full bg-amber-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-amber-600/20 transition-transform hover:scale-105 hover:bg-amber-700 active:scale-95"
           >
             <Sparkles className="size-4 animate-pulse text-amber-200" />
             <span>🎙️ Talk to Jana Seva</span>
@@ -111,14 +111,14 @@ export function Navbar({ onStartVoice, onNavigateSection }: NavbarProps) {
           <Button
             onClick={onStartVoice}
             size="sm"
-            className="rounded-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-1.5 gap-1 shadow-sm"
+            className="gap-1 rounded-full bg-amber-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-700"
           >
             <Sparkles className="size-3.5" />
             <span>Talk</span>
           </Button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg text-foreground hover:bg-muted"
+            className="text-foreground hover:bg-muted rounded-lg p-2"
             aria-label="Toggle Menu"
           >
             {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
@@ -128,38 +128,38 @@ export function Navbar({ onStartVoice, onNavigateSection }: NavbarProps) {
 
       {/* MOBILE DROPDOWN MENU */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-background/95 backdrop-blur-lg border-b border-border p-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
+        <div className="bg-background/95 border-border animate-in slide-in-from-top-2 space-y-3 border-b p-4 backdrop-blur-lg duration-200 md:hidden">
           <button
             onClick={() => handleNav('hero')}
-            className="block w-full text-left py-2 text-sm font-semibold text-foreground hover:text-amber-600"
+            className="text-foreground block w-full py-2 text-left text-sm font-semibold hover:text-amber-600"
           >
             Home
           </button>
           <button
             onClick={() => handleNav('categories')}
-            className="block w-full text-left py-2 text-sm font-semibold text-foreground hover:text-amber-600"
+            className="text-foreground block w-full py-2 text-left text-sm font-semibold hover:text-amber-600"
           >
             Health Access
           </button>
           <button
             onClick={() => handleNav('how-it-works')}
-            className="block w-full text-left py-2 text-sm font-semibold text-foreground hover:text-amber-600"
+            className="text-foreground block w-full py-2 text-left text-sm font-semibold hover:text-amber-600"
           >
             How It Works
           </button>
           <button
             onClick={() => handleNav('languages')}
-            className="block w-full text-left py-2 text-sm font-semibold text-foreground hover:text-amber-600"
+            className="text-foreground block w-full py-2 text-left text-sm font-semibold hover:text-amber-600"
           >
             Languages
           </button>
-          <div className="pt-2 border-t border-border/50">
+          <div className="border-border/50 border-t pt-2">
             <Button
               onClick={() => {
                 setMobileMenuOpen(false);
                 onStartVoice();
               }}
-              className="w-full rounded-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-3 gap-2"
+              className="w-full gap-2 rounded-full bg-amber-600 py-3 text-xs font-bold text-white hover:bg-amber-700"
             >
               <Sparkles className="size-4" />
               <span>🎙️ Talk to Jana Seva</span>

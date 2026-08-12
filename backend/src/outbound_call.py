@@ -2,9 +2,8 @@ import asyncio
 import os
 
 from dotenv import load_dotenv
-from twilio.rest import Client
-
 from livekit import api
+from twilio.rest import Client
 
 load_dotenv(".env.local", override=True)
 

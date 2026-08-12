@@ -4,14 +4,14 @@ import { AnimatePresence, type MotionProps, motion } from 'motion/react';
 import {
   type TrackReference,
   VideoTrack,
+  useAgent,
   useLocalParticipant,
   useTracks,
   useVoiceAssistant,
-  useAgent,
 } from '@livekit/components-react';
+import { HealthAvatar } from '@/components/app/health-avatar';
 import { cn } from '@/lib/shadcn/utils';
 import { AudioVisualizer } from './audio-visualizer';
-import { HealthAvatar } from '@/components/app/health-avatar';
 
 const ANIMATION_TRANSITION: MotionProps['transition'] = {
   type: 'spring',
