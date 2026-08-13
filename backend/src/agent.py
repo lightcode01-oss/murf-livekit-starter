@@ -39,11 +39,17 @@ class Assistant(Agent):
         caller_id: str = "demo_caller_ramesh",
         caller_profile: Optional[dict[str, Any]] = None,
         call_direction: str = "inbound",
+        call_id: Optional[str] = None,
+        channel: str = "browser",
+        call_tracker: Optional[dict[str, Any]] = None,
     ) -> None:
         self.memory_service = memory_service or MemoryService()
         self.caller_id = caller_id
         self.caller_profile = caller_profile or {"found": False}
         self.call_direction = call_direction
+        self.call_id = call_id
+        self.channel = channel
+        self.call_tracker = call_tracker if call_tracker is not None else {"outcome": "in_progress", "failure_reason": None}
 
         # Build dynamic system instructions incorporating caller profile context
         instructions = SYSTEM_PROMPT
@@ -78,6 +84,31 @@ INSTRUCTION: Greet the caller warmly as a new caller. When the caller introduces
 """
 
         super().__init__(instructions=instructions)
+
+    def mark_call_successful(self) -> None:
+        """Explicitly mark active call outcome as successful in session state and DB."""
+        if self.call_tracker:
+            self.call_tracker["outcome"] = "successful"
+            self.call_tracker["failure_reason"] = None
+        if self.call_id and self.memory_service:
+            self.memory_service.update_call_record(
+                call_id=self.call_id,
+                outcome="successful",
+                failure_reason=None,
+            )
+
+    def mark_call_failed(self, reason: str = "agent_error") -> None:
+        """Explicitly mark active call outcome as failed in session state and DB."""
+        if self.call_tracker:
+            self.call_tracker["outcome"] = "failed"
+            self.call_tracker["failure_reason"] = reason
+        if self.call_id and self.memory_service:
+            self.memory_service.update_call_record(
+                call_id=self.call_id,
+                outcome="failed",
+                failure_reason=reason,
+            )
+
 
     @function_tool
     async def lookup_caller(
@@ -245,6 +276,7 @@ INSTRUCTION: Greet the caller warmly as a new caller. When the caller introduces
             logger.info(
                 f"[ESCALATION] Successfully created escalation record: {ref_id}"
             )
+            self.mark_call_successful()
             return json.dumps(
                 {
                     "status": "created",
@@ -263,6 +295,7 @@ INSTRUCTION: Greet the caller warmly as a new caller. When the caller introduces
             logger.error(
                 f"[ESCALATION] Failed to create escalation record for {ref_id}"
             )
+            self.mark_call_failed("tool_failure")
             return json.dumps(
                 {
                     "status": "error",
@@ -582,15 +615,25 @@ async def my_agent(ctx: JobContext):
     # Connect to room first to access participant details
     await ctx.connect()
 
-    # Determine caller identity
+    # Determine caller identity & channel
+    call_id = ctx.room.name or f"call_{random.randint(10000, 99999)}"
     remote_p = next(iter(ctx.room.remote_participants.values()), None)
+    channel = "browser"
+    if (
+        remote_p and remote_p.kind == rtc.ParticipantKind.PARTICIPANT_KIND_SIP
+    ) or "sip" in ctx.room.name.lower():
+        channel = "sip"
+
     caller_id = (
         remote_p.identity if (remote_p and remote_p.identity) else "demo_caller_ramesh"
     )
-    logger.info(f"[MEMORY] Connected room {ctx.room.name} with Caller ID: {caller_id}")
+    logger.info(f"[MEMORY] Connected room {call_id} with Caller ID: {caller_id} (channel={channel})")
 
-    # Memory lookup
+    # Initialize Memory Service & Call Analytics Record
     memory_service = MemoryService()
+    memory_service.create_call_record(call_id=call_id, channel=channel)
+    call_tracker = {"outcome": "in_progress", "failure_reason": None}
+
     caller_profile = memory_service.lookup_caller(caller_id)
     logger.info(f"[MEMORY] Lookup result for {caller_id}: {caller_profile}")
 
@@ -598,7 +641,25 @@ async def my_agent(ctx: JobContext):
         memory_service=memory_service,
         caller_id=caller_id,
         caller_profile=caller_profile,
+        call_id=call_id,
+        channel=channel,
+        call_tracker=call_tracker,
     )
+
+    # Register shutdown callback to update call completion outcome in DB
+    @ctx.add_shutdown_callback
+    def _on_shutdown():
+        outcome = call_tracker.get("outcome", "in_progress")
+        failure_reason = call_tracker.get("failure_reason")
+        if outcome == "in_progress":
+            outcome = "failed"
+            failure_reason = failure_reason or "incomplete_task"
+        logger.info(f"[ANALYTICS] Finalizing call {call_id}: outcome='{outcome}', reason='{failure_reason}'")
+        memory_service.update_call_record(
+            call_id=call_id,
+            outcome=outcome,
+            failure_reason=failure_reason,
+        )
 
     # Voice AI pipeline configuration — STT optimized for Multilingual accuracy & endpointing
     session = AgentSession(
@@ -632,6 +693,8 @@ async def my_agent(ctx: JobContext):
     def _on_user_input_transcribed(ev):
         if getattr(ev, "is_final", False):
             logger.info(f"[STT FINAL] Transcript: '{ev.transcript}'")
+            if ev.transcript.strip():
+                assistant.mark_call_successful()
         else:
             logger.info(f"[STT INTERIM] Transcript: '{ev.transcript}'")
 

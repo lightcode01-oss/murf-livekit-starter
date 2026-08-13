@@ -134,3 +134,53 @@ class MemoryService:
     def seed_demo_escalations(self) -> list[dict[str, Any]]:
         """Seed sample escalation records for Day 7 demonstration."""
         return self.db.seed_demo_escalations()
+
+    def create_call_record(
+        self,
+        call_id: str,
+        channel: str = "browser",
+        language: str = "English",
+        started_at: Optional[str] = None,
+    ) -> Optional[dict[str, Any]]:
+        """Initialize a call analytics record."""
+        return self.db.create_call_record(
+            call_id=call_id,
+            channel=channel,
+            language=language,
+            started_at=started_at,
+        )
+
+    def update_call_record(
+        self,
+        call_id: str,
+        outcome: str,
+        failure_reason: Optional[str] = None,
+        ended_at: Optional[str] = None,
+        duration_seconds: Optional[int] = None,
+    ) -> bool:
+        """Update call analytics record outcome."""
+        return self.db.update_call_record(
+            call_id=call_id,
+            outcome=outcome,
+            failure_reason=failure_reason,
+            ended_at=ended_at,
+            duration_seconds=duration_seconds,
+        )
+
+    def get_call_by_id(self, call_id: str) -> Optional[dict[str, Any]]:
+        """Get call analytics record by ID."""
+        return self.db.get_call_by_id(call_id)
+
+    def get_analytics_summary(self) -> dict[str, Any]:
+        """Fetch operational analytics summary metrics."""
+        return self.db.get_analytics_summary()
+
+    def get_calls(
+        self,
+        outcome: Optional[str] = None,
+        channel: Optional[str] = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """Fetch list of call records."""
+        return self.db.get_calls(outcome=outcome, channel=channel, limit=limit)
+

@@ -265,6 +265,73 @@ uv run python src/outbound_call.py --phone "+91XXXXXXXXXX" --user-id "demo_calle
 
 ---
 
+## Day 8 — Call Analytics Dashboard
+
+Jana Seva includes a real-time, privacy-conscious **Call Analytics Dashboard** powered by actual conversation records in the local SQLite database (`jana_seva.db`).
+
+### 📊 Definition of Success & Failure
+- **Successful Call**: The caller safely receives the requested health-access information (e.g. PHC location lookup, government scheme eligibility details, symptom triage advice, ASHA visit logging, AQI advisory) OR Jana Seva correctly identifies that the situation requires human assistance and completes the human escalation workflow with caller permission.
+- **Failed Call**: The call disconnects before reaching the intended outcome (e.g. caller hangs up early, required tool/database error, critical API timeout, or unhandled exception).
+
+### 🗄️ Database Model (`calls` table)
+- `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+- `call_id` (TEXT UNIQUE)
+- `channel` (`'browser'` | `'sip'`)
+- `started_at` (ISO timestamp)
+- `ended_at` (ISO timestamp)
+- `duration_seconds` (INTEGER)
+- `outcome` (`'successful'` | `'failed'` | `'in_progress'`)
+- `failure_reason` (`'user_hangup'`, `'incomplete_task'`, `'tool_failure'`, `'api_error'`, `'agent_error'`, `NULL`)
+- `language` (`'English'`, `'Hindi'`, `'Hinglish'`)
+
+### ⚡ Analytics API Endpoints & CLI
+- `GET /api/analytics` (Next.js route) — Returns `{ success: true, summary: { total_calls, successful_calls, failed_calls, success_rate }, recent: [...] }`
+- `uv run python src/analytics_api.py summary` — Fetches aggregate metrics directly via CLI.
+- `uv run python src/analytics_api.py recent --outcome <val> --channel <val>` — Fetches recent call history records.
+
+### 🌐 Dashboard Route
+- Navigate to **`/analytics`** in the browser to view the Command Center dashboard.
+- Includes 4 metric cards: Total Calls, Successful Calls, Failed Calls, and Success Rate (%).
+- Supports outcome and channel filters with live database polling every 3 seconds.
+
+### 🔒 Privacy Protections
+- Healthcare data privacy compliance: **No personally identifiable information (PII)**, symptoms, medical diagnoses, transcripts, passwords, or API keys are stored or exposed on the public analytics dashboard. Only safe operational metadata is rendered.
+
+### 🧪 How to Run Tests
+```bash
+cd backend
+uv run pytest tests/test_analytics.py
+```
+
+---
+
+## DAY 8 DEMO SCRIPT
+
+### 1. Pre-call Baseline Check
+1. Open `http://localhost:3000/analytics`.
+2. Observe initial counters:
+   - **Total Calls**: `0` (or current baseline count)
+   - **Successful Calls**: `0`
+   - **Failed Calls**: `0`
+
+### 2. Browser Voice Session
+1. Navigate back to `http://localhost:3000`.
+2. Click **"🎙️ Talk to Jana Seva"** and allow microphone access.
+3. User asks: *"What documents do I need to visit a government hospital?"*
+4. Jana Seva responds: *"To visit a government hospital, please carry a valid identity proof like your Aadhaar card or Ration Card, along with any previous medical prescription or test reports if available."*
+5. Click **End Call**.
+
+### 3. Real-Time Analytics Verification
+1. Open or return to `http://localhost:3000/analytics`.
+2. Confirm the dashboard automatically updates in real-time via live sync:
+   - **Total Calls**: Increments by `1` (e.g. `1`)
+   - **Successful Calls**: Increments by `1` (e.g. `1`)
+   - **Failed Calls**: Remains unchanged (`0`)
+   - **Success Rate**: `100.0%`
+   - **Recent Call History**: Displays new record with channel `browser`, formatted duration, and status badge `Successful`.
+
+---
+
 ## Configuration
 
 ### Murf voice

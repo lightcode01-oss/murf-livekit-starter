@@ -22,8 +22,8 @@ import {
 
 export interface EscalationRecord {
   id: number;
-  reference_id: str;
-  reason: str;
+  reference_id: string;
+  reason: string;
   urgency: 'emergency' | 'high' | 'medium' | 'low' | string;
   user_name: string;
   summary: string;

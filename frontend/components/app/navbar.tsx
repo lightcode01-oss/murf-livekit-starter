@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { HeartPulse, Menu, MessageSquare, PhoneCall, Sparkles, X } from 'lucide-react';
+import Link from 'next/link';
+import { HeartPulse, Menu, MessageSquare, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/shadcn/utils';
 
@@ -67,7 +68,7 @@ export function Navbar({ onStartVoice, onNavigateSection }: NavbarProps) {
         </div>
 
         {/* CENTER NAV LINKS */}
-        <nav className="text-muted-foreground hidden items-center gap-8 text-xs font-semibold md:flex">
+        <nav className="text-muted-foreground hidden items-center gap-6 text-xs font-semibold md:flex">
           <button
             onClick={() => handleNav('hero')}
             className="hover:text-foreground cursor-pointer transition-colors"
@@ -92,6 +93,21 @@ export function Navbar({ onStartVoice, onNavigateSection }: NavbarProps) {
           >
             Languages
           </button>
+
+          <div className="bg-border/60 h-4 w-px" />
+
+          <Link
+            href="/analytics"
+            className="flex items-center gap-1 font-bold text-amber-600 transition-colors hover:underline dark:text-amber-400"
+          >
+            <span>📊 Analytics</span>
+          </Link>
+          <Link
+            href="/escalations"
+            className="flex items-center gap-1 font-bold text-emerald-600 transition-colors hover:underline dark:text-emerald-400"
+          >
+            <span>🚨 Escalations</span>
+          </Link>
         </nav>
 
         {/* RIGHT CTA BUTTON */}
@@ -153,6 +169,20 @@ export function Navbar({ onStartVoice, onNavigateSection }: NavbarProps) {
           >
             Languages
           </button>
+          <Link
+            href="/analytics"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block w-full py-2 text-left text-sm font-bold text-amber-600 dark:text-amber-400"
+          >
+            📊 Call Analytics
+          </Link>
+          <Link
+            href="/escalations"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block w-full py-2 text-left text-sm font-bold text-emerald-600 dark:text-emerald-400"
+          >
+            🚨 Human Escalations
+          </Link>
           <div className="border-border/50 border-t pt-2">
             <Button
               onClick={() => {

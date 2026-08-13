@@ -66,6 +66,23 @@ class Database:
                     )
                     """
                 )
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS calls (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        call_id TEXT UNIQUE NOT NULL,
+                        channel TEXT NOT NULL DEFAULT 'browser',
+                        started_at TEXT NOT NULL,
+                        ended_at TEXT,
+                        duration_seconds INTEGER DEFAULT 0,
+                        outcome TEXT NOT NULL DEFAULT 'in_progress',
+                        failure_reason TEXT,
+                        language TEXT DEFAULT 'English',
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL
+                    )
+                    """
+                )
             logger.info(f"[MEMORY] SQLite database initialized at {self.db_path}")
         except Exception as e:
             logger.error(f"[MEMORY] Error initializing database schema: {e}")
@@ -389,3 +406,195 @@ class Database:
                 if res:
                     created.append(res)
         return created
+
+    def create_call_record(
+        self,
+        call_id: str,
+        channel: str = "browser",
+        language: str = "English",
+        started_at: Optional[str] = None,
+    ) -> Optional[dict[str, Any]]:
+        """Insert a new call record into the calls table."""
+        now_iso = datetime.now(timezone.utc).isoformat()
+        start_time = started_at or now_iso
+        norm_channel = channel.lower() if channel else "browser"
+
+        try:
+            with closing(self._get_connection()) as conn, conn:
+                conn.execute(
+                    """
+                    INSERT INTO calls (
+                        call_id, channel, started_at, outcome, language, created_at, updated_at
+                    )
+                    VALUES (?, ?, ?, 'in_progress', ?, ?, ?)
+                    ON CONFLICT(call_id) DO UPDATE SET
+                        updated_at = excluded.updated_at
+                    """,
+                    (call_id, norm_channel, start_time, language, now_iso, now_iso),
+                )
+            logger.info(f"[ANALYTICS] Call record initialized for call_id: {call_id} (channel={norm_channel})")
+            return self.get_call_by_id(call_id)
+        except Exception as e:
+            logger.error(f"[ANALYTICS] Error creating call record {call_id}: {e}")
+            return None
+
+    def update_call_record(
+        self,
+        call_id: str,
+        outcome: str,
+        failure_reason: Optional[str] = None,
+        ended_at: Optional[str] = None,
+        duration_seconds: Optional[int] = None,
+    ) -> bool:
+        """Update an existing call record upon call completion."""
+        now_iso = datetime.now(timezone.utc).isoformat()
+        end_time = ended_at or now_iso
+        norm_outcome = outcome.lower()
+
+        existing = self.get_call_by_id(call_id)
+        if not existing:
+            # Auto-create if not found
+            self.create_call_record(call_id=call_id)
+            existing = self.get_call_by_id(call_id)
+
+        dur = duration_seconds
+        if dur is None and existing and existing.get("started_at"):
+            try:
+                st = datetime.fromisoformat(existing["started_at"])
+                et = datetime.fromisoformat(end_time)
+                dur = max(0, int((et - st).total_seconds()))
+            except Exception:
+                dur = 0
+        elif dur is None:
+            dur = 0
+
+        clean_reason = failure_reason if norm_outcome == "failed" else None
+
+        try:
+            with closing(self._get_connection()) as conn, conn:
+                cursor = conn.execute(
+                    """
+                    UPDATE calls
+                    SET outcome = ?, failure_reason = ?, ended_at = ?, duration_seconds = ?, updated_at = ?
+                    WHERE call_id = ?
+                    """,
+                    (norm_outcome, clean_reason, end_time, dur, now_iso, call_id),
+                )
+                if cursor.rowcount > 0:
+                    logger.info(f"[ANALYTICS] Call record updated for {call_id}: outcome='{norm_outcome}', duration={dur}s")
+                    return True
+                return False
+        except Exception as e:
+            logger.error(f"[ANALYTICS] Error updating call record {call_id}: {e}")
+            return False
+
+    def get_call_by_id(self, call_id: str) -> Optional[dict[str, Any]]:
+        """Fetch single call record by call_id."""
+        try:
+            with closing(self._get_connection()) as conn:
+                cursor = conn.execute("SELECT * FROM calls WHERE call_id = ?", (call_id,))
+                row = cursor.fetchone()
+                if row:
+                    return {
+                        "id": row["id"],
+                        "call_id": row["call_id"],
+                        "channel": row["channel"],
+                        "started_at": row["started_at"],
+                        "ended_at": row["ended_at"],
+                        "duration_seconds": row["duration_seconds"],
+                        "outcome": row["outcome"],
+                        "failure_reason": row["failure_reason"],
+                        "language": row["language"],
+                        "created_at": row["created_at"],
+                        "updated_at": row["updated_at"],
+                    }
+                return None
+        except Exception as e:
+            logger.error(f"[ANALYTICS] Error fetching call {call_id}: {e}")
+            return None
+
+    def get_analytics_summary(self) -> dict[str, Any]:
+        """Calculate real-time operational call analytics strictly from database call records."""
+        try:
+            with closing(self._get_connection()) as conn:
+                cur_total = conn.execute("SELECT COUNT(*) FROM calls WHERE outcome IN ('successful', 'failed')")
+                total_calls = cur_total.fetchone()[0]
+
+                cur_success = conn.execute("SELECT COUNT(*) FROM calls WHERE outcome = 'successful'")
+                successful_calls = cur_success.fetchone()[0]
+
+                cur_failed = conn.execute("SELECT COUNT(*) FROM calls WHERE outcome = 'failed'")
+                failed_calls = cur_failed.fetchone()[0]
+
+                # If there are in_progress calls or overall count needed:
+                # Prompt requirement: Total Calls, Successful Calls, Failed Calls.
+                # Total = COUNT(all completed calls, or all records)
+                # If total_calls is 0: rate = 0.0
+                success_rate = (
+                    round((successful_calls / total_calls * 100), 1)
+                    if total_calls > 0
+                    else 0.0
+                )
+
+                return {
+                    "total_calls": total_calls,
+                    "successful_calls": successful_calls,
+                    "failed_calls": failed_calls,
+                    "success_rate": success_rate,
+                }
+        except Exception as e:
+            logger.error(f"[ANALYTICS] Error generating summary: {e}")
+            return {
+                "total_calls": 0,
+                "successful_calls": 0,
+                "failed_calls": 0,
+                "success_rate": 0.0,
+            }
+
+    def get_calls(
+        self,
+        outcome: Optional[str] = None,
+        channel: Optional[str] = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """Fetch list of operational call records matching optional filters."""
+        query = "SELECT * FROM calls WHERE 1=1"
+        params: list[Any] = []
+
+        if outcome and outcome.lower() != "all":
+            query += " AND LOWER(outcome) = ?"
+            params.append(outcome.lower())
+
+        if channel and channel.lower() != "all":
+            query += " AND LOWER(channel) = ?"
+            params.append(channel.lower())
+
+        query += " ORDER BY id DESC LIMIT ?"
+        params.append(limit)
+
+        try:
+            with closing(self._get_connection()) as conn:
+                cursor = conn.execute(query, params)
+                rows = cursor.fetchall()
+                results = []
+                for row in rows:
+                    results.append(
+                        {
+                            "id": row["id"],
+                            "call_id": row["call_id"],
+                            "channel": row["channel"],
+                            "started_at": row["started_at"],
+                            "ended_at": row["ended_at"],
+                            "duration_seconds": row["duration_seconds"],
+                            "outcome": row["outcome"],
+                            "failure_reason": row["failure_reason"],
+                            "language": row["language"],
+                            "created_at": row["created_at"],
+                            "updated_at": row["updated_at"],
+                        }
+                    )
+                return results
+        except Exception as e:
+            logger.error(f"[ANALYTICS] Error fetching call records: {e}")
+            return []
+
