@@ -2,7 +2,12 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, type MotionProps, motion } from 'motion/react';
-import { useAgent, useSessionContext, useSessionMessages } from '@livekit/components-react';
+import {
+  useAgent,
+  useSessionContext,
+  useSessionMessages,
+  useVoiceAssistant,
+} from '@livekit/components-react';
 import { AgentChatTranscript } from '@/components/agents-ui/agent-chat-transcript';
 import {
   AgentControlBar,
@@ -181,6 +186,8 @@ export function AgentSessionView_01({
   const [chatOpen, setChatOpen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { state: agentState } = useAgent();
+  const { agentParticipant } = useVoiceAssistant();
+  const activeAgent = agentParticipant?.attributes?.active_agent;
 
   const controls: AgentControlBarControls = {
     leave: true,
@@ -209,6 +216,7 @@ export function AgentSessionView_01({
       <div className="pointer-events-none absolute inset-x-0 top-4 z-50 flex justify-center px-4">
         <AgentStateBadge
           state={agentState}
+          activeAgent={activeAgent}
           className="pointer-events-auto shadow-lg backdrop-blur-md"
         />
       </div>

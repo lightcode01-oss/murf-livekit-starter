@@ -184,3 +184,27 @@ class MemoryService:
         """Fetch list of call records."""
         return self.db.get_calls(outcome=outcome, channel=channel, limit=limit)
 
+    def log_handoff(
+        self,
+        handoff_id: str,
+        call_id: str,
+        from_agent: str = "main",
+        to_agent: str = "clinic_appointment_specialist",
+        reason: str = "",
+        success: bool = True,
+    ) -> bool:
+        """Record an agent handoff event."""
+        return self.db.create_handoff_log(
+            handoff_id=handoff_id,
+            call_id=call_id,
+            from_agent=from_agent,
+            to_agent=to_agent,
+            reason=reason,
+            success=success,
+        )
+
+    def get_handoff_logs(self, call_id: Optional[str] = None) -> list[dict[str, Any]]:
+        """Fetch handoff logs."""
+        return self.db.get_handoff_logs(call_id=call_id)
+
+

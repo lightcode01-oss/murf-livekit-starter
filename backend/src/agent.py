@@ -1,3 +1,5 @@
+import asyncio
+import inspect
 import json
 import logging
 import random
@@ -24,12 +26,21 @@ from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 from health_data import get_cached_facilities, get_district_coords
 from memory.service import MemoryService
-from prompt import SYSTEM_PROMPT
+from prompt import SPECIALIST_SYSTEM_PROMPT, SYSTEM_PROMPT
 from sanitizer import sanitize_text
 
 logger = logging.getLogger("agent")
 
 load_dotenv(".env.local")
+
+_background_tasks: set[asyncio.Task[Any]] = set()
+
+
+def _run_bg_task(coro: Any) -> asyncio.Task[Any]:
+    task = asyncio.create_task(coro)
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+    return task
 
 
 class Assistant(Agent):
@@ -595,6 +606,490 @@ INSTRUCTION: Greet the caller warmly as a new caller. When the caller introduces
         }
         return json.dumps(payload)
 
+    @function_tool
+    async def handoff_to_clinic_specialist(
+        self,
+        context: RunContext,
+        user_request: str,
+        conversation_summary: str = "",
+        user_language: str = "",
+        known_user_context: str = "",
+    ) -> str:
+        """Hand off the conversation to the Clinic & Appointment Specialist when the user's primary request requires clinic discovery, appointment assistance, appointment preparation, or clinic/service navigation.
+
+        Do NOT use this tool for ordinary healthcare-information questions that the main Jana Seva agent can answer.
+        Do NOT use this tool for diagnosis, medication prescribing, or emergency medical situations.
+        If the user reports emergency/red-flag symptoms, follow the existing human escalation and safety workflow instead.
+
+        BEFORE calling this tool, YOU MUST tell the user out loud that you are connecting them to the Clinic & Appointment Specialist.
+
+        Args:
+            user_request: Specific user request or intent regarding clinic/appointment help.
+            conversation_summary: Concise summary of what has been discussed so far.
+            user_language: Preferred spoken language (e.g. English, Hindi, Odia).
+            known_user_context: Relevant user facts (location/district, health service preference) sanitized of private info.
+        """
+        logger.info(
+            f"[HANDOFF] handoff_to_clinic_specialist called for caller '{self.caller_id}' with request: '{user_request}'"
+        )
+
+        try:
+            lang = (
+                user_language
+                or self.caller_profile.get("language_preference")
+                or "English"
+            )
+            clean_summary = sanitize_text(
+                conversation_summary
+                or f"Caller requested clinic/appointment assistance: {user_request}"
+            )
+            clean_request = sanitize_text(user_request)
+
+            random_num = random.randint(1000, 9999)
+            handoff_id = f"HO-2026-{random_num:04d}"
+
+            if self.call_id and self.memory_service:
+                self.memory_service.log_handoff(
+                    handoff_id=handoff_id,
+                    call_id=self.call_id,
+                    from_agent="main",
+                    to_agent="clinic_appointment_specialist",
+                    reason=clean_request,
+                    success=True,
+                )
+
+            specialist = ClinicSpecialist(
+                memory_service=self.memory_service,
+                caller_id=self.caller_id,
+                caller_profile=self.caller_profile,
+                call_id=self.call_id,
+                channel=self.channel,
+                call_tracker=self.call_tracker,
+                user_request=clean_request,
+                conversation_summary=clean_summary,
+                user_language=lang,
+                known_user_context=known_user_context,
+            )
+
+            context.session.update_agent(specialist)
+
+            try:
+                if context.session.room and context.session.room.local_participant:
+                    res = context.session.room.local_participant.set_attributes(
+                        {
+                            "active_agent": "Clinic & Appointment Specialist",
+                            "agent_role": "specialist",
+                        }
+                    )
+                    if inspect.iscoroutine(res):
+                        _run_bg_task(res)
+            except Exception as attr_err:
+                logger.warning(
+                    f"[HANDOFF] Could not update participant attributes: {attr_err}"
+                )
+
+            if lang.lower() in ["hindi", "hi"]:
+                intro_instruction = (
+                    f"SPECIALIST INTRO: Introduce yourself warmly in Hindi using Devanagari script: "
+                    f"'नमस्ते, मैं Jana Seva का Clinic & Appointment Specialist हूँ। मुझे जानकारी मिली है कि आप {clean_request} में मदद चाहते हैं। चलिए आपकी अपॉइंटमेंट प्रक्रिया में मदद करते हैं।'"
+                )
+            else:
+                intro_instruction = (
+                    f"SPECIALIST INTRO: Introduce yourself warmly in English: "
+                    f"'Hi, I\'m Jana Seva\'s Clinic & Appointment Specialist. I understand you\'re looking for help with {clean_request}. Let\'s get that sorted for you.'"
+                )
+
+            reply_res = context.session.generate_reply(instructions=intro_instruction)
+            if inspect.iscoroutine(reply_res):
+                _run_bg_task(reply_res)
+
+            return json.dumps(
+                {
+                    "status": "handoff_successful",
+                    "handoff_id": handoff_id,
+                    "to_agent": "Clinic & Appointment Specialist",
+                    "user_request": clean_request,
+                    "language": lang,
+                    "message": "Successfully handed off session to Clinic & Appointment Specialist.",
+                }
+            )
+        except Exception as e:
+            logger.error(f"[HANDOFF] Handoff failed: {e}")
+            if self.call_id and self.memory_service:
+                self.memory_service.log_handoff(
+                    handoff_id=f"HO-FAIL-{random.randint(1000, 9999)}",
+                    call_id=self.call_id or "unknown",
+                    from_agent="main",
+                    to_agent="clinic_appointment_specialist",
+                    reason=user_request,
+                    success=False,
+                )
+            return json.dumps(
+                {
+                    "status": "handoff_failed",
+                    "error": str(e),
+                    "fallback_guidance": (
+                        "INFORM USER OUT LOUD: Say 'I\'m unable to connect you to the appointment specialist right now. "
+                        "I can still help you with the information I have available.' and continue assisting them."
+                    ),
+                }
+            )
+
+
+class ClinicSpecialist(Agent):
+    """Clinic & Appointment Specialist voice agent.
+
+    Narrowly focused on clinic discovery, department navigation, appointment information, appointment preparation, and workflow guidance.
+    """
+
+    def __init__(
+        self,
+        memory_service: Optional[MemoryService] = None,
+        caller_id: str = "demo_caller_ramesh",
+        caller_profile: Optional[dict[str, Any]] = None,
+        call_id: Optional[str] = None,
+        channel: str = "browser",
+        call_tracker: Optional[dict[str, Any]] = None,
+        user_request: str = "",
+        conversation_summary: str = "",
+        user_language: str = "English",
+        known_user_context: str = "",
+    ) -> None:
+        self.memory_service = memory_service or MemoryService()
+        self.caller_id = caller_id
+        self.caller_profile = caller_profile or {"found": False}
+        self.call_id = call_id
+        self.channel = channel
+        self.call_tracker = (
+            call_tracker
+            if call_tracker is not None
+            else {"outcome": "in_progress", "failure_reason": None}
+        )
+        self.user_request = user_request
+        self.conversation_summary = conversation_summary
+        self.user_language = user_language
+        self.known_user_context = known_user_context
+
+        instructions = SPECIALIST_SYSTEM_PROMPT
+        instructions += f"""
+
+---
+
+## ACTIVE HANDOFF CONTEXT
+- User Request: {self.user_request or 'Clinic and appointment assistance'}
+- Transferred Summary: {self.conversation_summary or 'User requested clinic discovery and appointment assistance.'}
+- Spoken Language: {self.user_language or 'English'}
+- Known Context: {self.known_user_context or 'None'}
+
+INSTRUCTION: You have just taken over from the main Jana Seva agent.
+Address their request regarding '{self.user_request or "appointment assistance"}' directly.
+Do NOT ask 'How can I help you?'. Introduce yourself briefly and guide them on clinic selection and appointment next steps.
+"""
+        super().__init__(instructions=instructions)
+
+    def mark_call_successful(self) -> None:
+        """Explicitly mark active call outcome as successful in session state and DB."""
+        if self.call_tracker:
+            self.call_tracker["outcome"] = "successful"
+            self.call_tracker["failure_reason"] = None
+        if self.call_id and self.memory_service:
+            self.memory_service.update_call_record(
+                call_id=self.call_id,
+                outcome="successful",
+                failure_reason=None,
+            )
+
+    def mark_call_failed(self, reason: str = "agent_error") -> None:
+        """Explicitly mark active call outcome as failed in session state and DB."""
+        if self.call_tracker:
+            self.call_tracker["outcome"] = "failed"
+            self.call_tracker["failure_reason"] = reason
+        if self.call_id and self.memory_service:
+            self.memory_service.update_call_record(
+                call_id=self.call_id,
+                outcome="failed",
+                failure_reason=reason,
+            )
+
+    @function_tool
+    async def handback_to_main_agent(
+        self,
+        context: RunContext,
+        reason: str = "Appointment task completed or user asked general healthcare question",
+        user_query: str = "",
+    ) -> str:
+        """Hand the conversation back to the primary Jana Seva agent when appointment assistance is complete or the user asks a general health question outside appointment scope.
+
+        Args:
+            reason: Reason for handing back to main agent.
+            user_query: User's general health query.
+        """
+        logger.info(
+            f"[HANDOFF] Handback requested by Specialist. Reason: '{reason}', query: '{user_query}'"
+        )
+        try:
+            main_agent = Assistant(
+                memory_service=self.memory_service,
+                caller_id=self.caller_id,
+                caller_profile=self.caller_profile,
+                call_id=self.call_id,
+                channel=self.channel,
+                call_tracker=self.call_tracker,
+            )
+
+            random_num = random.randint(1000, 9999)
+            handoff_id = f"HO-2026-{random_num:04d}"
+            if self.call_id and self.memory_service:
+                self.memory_service.log_handoff(
+                    handoff_id=handoff_id,
+                    call_id=self.call_id,
+                    from_agent="clinic_appointment_specialist",
+                    to_agent="main",
+                    reason=reason,
+                    success=True,
+                )
+
+            context.session.update_agent(main_agent)
+
+            try:
+                if context.session.room and context.session.room.local_participant:
+                    res = context.session.room.local_participant.set_attributes(
+                        {
+                            "active_agent": "Jana Seva Main Agent",
+                            "agent_role": "main",
+                        }
+                    )
+                    if inspect.iscoroutine(res):
+                        _run_bg_task(res)
+            except Exception as meta_err:
+                logger.warning(
+                    f"[HANDOFF] Could not update participant attributes: {meta_err}"
+                )
+
+            if user_query:
+                reply_res = context.session.generate_reply(
+                    instructions=f"RETURNING TO MAIN AGENT: The appointment specialist finished or user asked general question: '{user_query}'. Answer politely in 1 sentence."
+                )
+                if inspect.iscoroutine(reply_res):
+                    _run_bg_task(reply_res)
+
+            return json.dumps(
+                {
+                    "status": "handback_successful",
+                    "to_agent": "Jana Seva Main Agent",
+                    "reason": reason,
+                }
+            )
+        except Exception as e:
+            logger.error(f"[HANDOFF] Error during handback to main agent: {e}")
+            return json.dumps({"status": "handback_failed", "error": str(e)})
+
+    @function_tool
+    async def fetch_nearest_phc_facility(
+        self,
+        context: RunContext,
+        district: str = "",
+        facility_type: str = "all",
+        user_id: str = "",
+    ) -> str:
+        """Fetch nearby Primary Health Centres (PHC), Community Health Centres (CHC), government hospitals, or clinics for appointment discovery.
+
+        Args:
+            district: Target district, city, or area name (e.g. Jaipur, Delhi, Lucknow). Auto-retrieves from caller profile if empty.
+            facility_type: Type of facility ('phc', 'chc', 'hospital', 'jan_aushadhi', or 'all').
+            user_id: Caller identifier.
+        """
+        target_id = user_id or self.caller_id
+        target_district = district.strip()
+        if not target_district:
+            facts = self.caller_profile.get("facts", {})
+            target_district = str(
+                facts.get("district") or facts.get("location") or "Jaipur"
+            ).strip()
+
+        now_str = datetime.now(timezone.utc).strftime("%B %d, %Y at %H:%M UTC")
+        logger.info(
+            f"[SPECIALIST] Executing fetch_nearest_phc_facility for '{target_id}', district: '{target_district}'"
+        )
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                query = f"hospital PHC health center {target_district} India"
+                url = f"https://nominatim.openstreetmap.org/search?q={query}&format=json&limit=3"
+                headers = {"User-Agent": "SwasthyaSathiVoiceAgent/1.0"}
+                resp = await client.get(url, headers=headers)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if isinstance(data, list) and len(data) > 0:
+                        live_facilities = [
+                            {
+                                "name": item.get("display_name", "Health Center").split(",")[0],
+                                "type": "Primary / Government Health Facility",
+                                "address": item.get("display_name", "Health Center"),
+                                "operating_hours": "8:00 AM - 4:00 PM (Emergency 24/7)",
+                                "contact": "108 Emergency Ambulance",
+                            }
+                            for item in data[:3]
+                        ]
+                        return json.dumps(
+                            {
+                                "status": "success",
+                                "district": target_district,
+                                "facility_type": facility_type,
+                                "data_source": "Live OpenStreetMap Healthcare Directory",
+                                "data_timestamp": f"As of {now_str}",
+                                "facilities": live_facilities,
+                            }
+                        )
+        except Exception:
+            pass
+
+        cached = get_cached_facilities(target_district, facility_type)
+        return json.dumps(
+            {
+                "status": "cached_registry",
+                "district": target_district,
+                "facility_type": facility_type,
+                "data_source": "Cached Government Health Facility Directory",
+                "facilities": cached,
+            }
+        )
+
+    @function_tool
+    async def schedule_medication_reminder(
+        self,
+        context: RunContext,
+        medicine_name: str,
+        time_of_day: str,
+        instructions: str = "after food",
+    ) -> str:
+        """Set a medication dose reminder or appointment preparation reminder for a patient."""
+        logger.info(
+            f"[SPECIALIST] Setting appointment prep reminder for {medicine_name} at {time_of_day}"
+        )
+        return f"Appointment preparation reminder set for {medicine_name} at {time_of_day} ({instructions})."
+
+    @function_tool
+    async def triage_symptom(
+        self,
+        context: RunContext,
+        symptom: str,
+        duration_days: int = 1,
+        severity: str = "moderate",
+    ) -> str:
+        """Evaluate patient symptoms to recommend appropriate clinic department or emergency guidance."""
+        logger.info(
+            f"[SPECIALIST] Triage symptom: {symptom}, duration: {duration_days}, severity: {severity}"
+        )
+        symptom_lower = symptom.lower()
+        if any(
+            w in symptom_lower
+            for w in [
+                "chest pain",
+                "breathing",
+                "unconscious",
+                "heavy bleeding",
+                "convulsion",
+            ]
+        ):
+            return "EMERGENCY RED FLAG DETECTED. Advise immediate emergency hospital transport or 108 ambulance service without delay."
+        return f"For {severity} {symptom} lasting {duration_days} day(s), recommend visiting General OPD or primary health centre."
+
+    @function_tool
+    async def create_escalation(
+        self,
+        context: RunContext,
+        reason: str,
+        urgency: str = "high",
+        user_name: str = "Caller",
+        summary: str = "",
+        agent_checked: str = "",
+        language: str = "English",
+        preferred_followup: str = "Phone",
+        permission_confirmed: bool = False,
+        user_id: str = "",
+    ) -> str:
+        """Create a human-support escalation request if emergency symptoms or non-appointment medical requests occur."""
+        if not permission_confirmed:
+            return json.dumps(
+                {
+                    "status": "aborted",
+                    "error": "Explicit permission_confirmed is required to create an escalation.",
+                }
+            )
+        clean_summary = sanitize_text(summary)
+        clean_agent_checked = sanitize_text(agent_checked)
+        clean_user_name = sanitize_text(user_name or "Caller")
+
+        random_num = random.randint(1000, 9999)
+        ref_id = f"JS-2026-{random_num:04d}"
+        while self.memory_service.get_escalation_by_ref(ref_id) is not None:
+            random_num = random.randint(1000, 9999)
+            ref_id = f"JS-2026-{random_num:04d}"
+
+        res = self.memory_service.create_escalation(
+            reference_id=ref_id,
+            reason=reason,
+            urgency=urgency,
+            user_name=clean_user_name,
+            summary=clean_summary,
+            agent_checked=clean_agent_checked,
+            language=language,
+            preferred_followup=preferred_followup,
+            permission_confirmed=True,
+            status="open",
+        )
+        if res:
+            self.mark_call_successful()
+            return json.dumps(
+                {
+                    "status": "created",
+                    "reference_id": ref_id,
+                    "urgency": urgency.lower(),
+                    "message": f"Escalation successfully logged with reference ID {ref_id}.",
+                }
+            )
+        return json.dumps(
+            {"status": "error", "error": "Database error storing escalation."}
+        )
+
+    @function_tool
+    async def lookup_caller(
+        self,
+        context: RunContext,
+        user_id: str = "",
+    ) -> str:
+        """Retrieve caller profile by user_id."""
+        target_id = user_id or self.caller_id
+        res = self.memory_service.lookup_caller(target_id)
+        return json.dumps(res)
+
+    @function_tool
+    async def save_caller_memory(
+        self,
+        context: RunContext,
+        user_id: str = "",
+        name: str = "",
+        language_preference: str = "",
+        facts_json: str = "",
+    ) -> str:
+        """Save caller-approved information to memory."""
+        target_id = user_id or self.caller_id
+        facts: dict[str, Any] = {}
+        if facts_json:
+            try:
+                parsed = json.loads(facts_json)
+                if isinstance(parsed, dict):
+                    facts.update(parsed)
+            except Exception:
+                pass
+        res = self.memory_service.save_caller_memory(
+            user_id=target_id,
+            name=name,
+            language_preference=language_preference,
+            facts=facts if facts else None,
+        )
+        return json.dumps(res)
+
 
 server = AgentServer()
 
@@ -717,6 +1212,16 @@ async def my_agent(ctx: JobContext):
             ),
         ),
     )
+
+    try:
+        if ctx.room and ctx.room.local_participant:
+            await ctx.room.local_participant.set_attributes(
+                {"active_agent": "Jana Seva Main Agent", "agent_role": "main"}
+            )
+    except Exception as attr_err:
+        logger.warning(
+            f"[AGENT] Could not set initial participant attributes: {attr_err}"
+        )
 
     # Determine if outbound SIP or outbound room
     is_outbound = False

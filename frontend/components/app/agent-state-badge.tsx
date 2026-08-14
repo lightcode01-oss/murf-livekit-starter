@@ -7,10 +7,13 @@ import { cn } from '@/lib/shadcn/utils';
 
 interface AgentStateBadgeProps {
   state?: AgentState | 'ready' | 'connecting' | 'disconnected';
+  activeAgent?: string;
   className?: string;
 }
 
-export function AgentStateBadge({ state = 'ready', className }: AgentStateBadgeProps) {
+export function AgentStateBadge({ state = 'ready', activeAgent, className }: AgentStateBadgeProps) {
+  const isSpecialist = activeAgent === 'Clinic & Appointment Specialist';
+
   const getBadgeContent = () => {
     switch (state) {
       case 'ready':
@@ -33,38 +36,48 @@ export function AgentStateBadge({ state = 'ready', className }: AgentStateBadgeP
         };
       case 'listening':
         return {
-          label: 'Listening to you...',
-          subtext: 'Speak your health query or symptom',
+          label: isSpecialist ? 'Specialist Listening...' : 'Listening to you...',
+          subtext: isSpecialist
+            ? 'Clinic & Appointment Specialist'
+            : 'Speak your health query or symptom',
           icon: (
             <span className="relative flex size-3 items-center justify-center">
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <Mic className="relative z-10 size-3.5 text-emerald-600 dark:text-emerald-400" />
             </span>
           ),
-          colorClass:
-            'bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border-emerald-500/30 ring-2 ring-emerald-500/20',
+          colorClass: isSpecialist
+            ? 'bg-purple-500/15 text-purple-900 dark:text-purple-200 border-purple-500/30 ring-2 ring-purple-500/20'
+            : 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border-emerald-500/30 ring-2 ring-emerald-500/20',
           pulse: true,
         };
       case 'thinking':
         return {
-          label: 'Swasthya Sathi is thinking...',
-          subtext: 'Analyzing symptoms & health guidelines',
+          label: isSpecialist ? 'Specialist is thinking...' : 'Swasthya Sathi is thinking...',
+          subtext: isSpecialist
+            ? 'Clinic & Appointment Specialist'
+            : 'Analyzing symptoms & health guidelines',
           icon: <Brain className="size-4 animate-pulse text-sky-500" />,
-          colorClass: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20',
+          colorClass: isSpecialist
+            ? 'bg-purple-500/15 text-purple-900 dark:text-purple-200 border-purple-500/30'
+            : 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20',
           pulse: true,
         };
       case 'speaking':
         return {
-          label: 'Swasthya Sathi is speaking...',
-          subtext: 'Listen to health advice & instructions',
+          label: isSpecialist ? 'Specialist is speaking...' : 'Swasthya Sathi is speaking...',
+          subtext: isSpecialist
+            ? 'Clinic & Appointment Specialist'
+            : 'Listen to health advice & instructions',
           icon: (
             <span className="relative flex size-3 items-center justify-center">
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-indigo-400 opacity-75" />
               <Volume2 className="relative z-10 size-3.5 text-indigo-600 dark:text-indigo-400" />
             </span>
           ),
-          colorClass:
-            'bg-indigo-500/15 text-indigo-800 dark:text-indigo-200 border-indigo-500/30 ring-2 ring-indigo-500/20',
+          colorClass: isSpecialist
+            ? 'bg-purple-500/20 text-purple-900 dark:text-purple-100 border-purple-500/40 ring-2 ring-purple-500/30'
+            : 'bg-indigo-500/15 text-indigo-800 dark:text-indigo-200 border-indigo-500/30 ring-2 ring-indigo-500/20',
           pulse: true,
         };
       case 'disconnected':
@@ -77,10 +90,12 @@ export function AgentStateBadge({ state = 'ready', className }: AgentStateBadgeP
         };
       default:
         return {
-          label: 'Swasthya Sathi Active',
-          subtext: 'Voice health assistant',
+          label: isSpecialist ? 'Clinic & Appointment Specialist' : 'Swasthya Sathi Active',
+          subtext: isSpecialist ? 'Specialist Connected' : 'Voice health assistant',
           icon: <Mic className="text-primary size-4" />,
-          colorClass: 'bg-primary/10 text-primary border-primary/20',
+          colorClass: isSpecialist
+            ? 'bg-purple-500/15 text-purple-900 dark:text-purple-200 border-purple-500/30'
+            : 'bg-primary/10 text-primary border-primary/20',
           pulse: false,
         };
     }

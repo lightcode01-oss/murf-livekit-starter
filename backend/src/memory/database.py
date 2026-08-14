@@ -83,6 +83,21 @@ class Database:
                     )
                     """
                 )
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS handoffs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        handoff_id TEXT UNIQUE NOT NULL,
+                        call_id TEXT NOT NULL,
+                        from_agent TEXT NOT NULL,
+                        to_agent TEXT NOT NULL,
+                        reason TEXT,
+                        timestamp TEXT NOT NULL,
+                        success INTEGER NOT NULL DEFAULT 1,
+                        created_at TEXT NOT NULL
+                    )
+                    """
+                )
             logger.info(f"[MEMORY] SQLite database initialized at {self.db_path}")
         except Exception as e:
             logger.error(f"[MEMORY] Error initializing database schema: {e}")
@@ -597,4 +612,75 @@ class Database:
         except Exception as e:
             logger.error(f"[ANALYTICS] Error fetching call records: {e}")
             return []
+
+    def create_handoff_log(
+        self,
+        handoff_id: str,
+        call_id: str,
+        from_agent: str = "main",
+        to_agent: str = "clinic_appointment_specialist",
+        reason: str = "",
+        success: bool = True,
+    ) -> bool:
+        """Record an agent handoff event for debugging and call analytics."""
+        try:
+            now_iso = datetime.now(timezone.utc).isoformat()
+            with closing(self._get_connection()) as conn, conn:
+                conn.execute(
+                    """
+                    INSERT INTO handoffs (handoff_id, call_id, from_agent, to_agent, reason, timestamp, success, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        handoff_id,
+                        call_id,
+                        from_agent,
+                        to_agent,
+                        reason,
+                        now_iso,
+                        1 if success else 0,
+                        now_iso,
+                    ),
+                )
+            logger.info(
+                f"[HANDOFF] Logged handoff '{handoff_id}' (call={call_id}, from={from_agent}, to={to_agent}, success={success})"
+            )
+            return True
+        except Exception as e:
+            logger.error(f"[HANDOFF] Error logging handoff record: {e}")
+            return False
+
+    def get_handoff_logs(self, call_id: Optional[str] = None) -> list[dict[str, Any]]:
+        """Fetch handoff logs, optionally filtered by call_id."""
+        query = "SELECT * FROM handoffs"
+        params: list[Any] = []
+        if call_id:
+            query += " WHERE call_id = ?"
+            params.append(call_id)
+        query += " ORDER BY id DESC"
+
+        try:
+            with closing(self._get_connection()) as conn:
+                cursor = conn.execute(query, params)
+                rows = cursor.fetchall()
+                results = []
+                for row in rows:
+                    results.append(
+                        {
+                            "id": row["id"],
+                            "handoff_id": row["handoff_id"],
+                            "call_id": row["call_id"],
+                            "from_agent": row["from_agent"],
+                            "to_agent": row["to_agent"],
+                            "reason": row["reason"],
+                            "timestamp": row["timestamp"],
+                            "success": bool(row["success"]),
+                            "created_at": row["created_at"],
+                        }
+                    )
+                return results
+        except Exception as e:
+            logger.error(f"[HANDOFF] Error fetching handoff logs: {e}")
+            return []
+
 

@@ -332,6 +332,83 @@ uv run pytest tests/test_analytics.py
 
 ---
 
+## DAY 9 — SPECIALIST AGENT HANDOFF (CLINIC & APPOINTMENT SPECIALIST)
+
+Jana Seva features a specialized multi-agent voice architecture. When a user's request requires clinic discovery, department selection, or appointment assistance, the primary Jana Seva agent announces the transfer and hands off the conversation to the **Clinic & Appointment Specialist**.
+
+### 🏗️ Multi-Agent Architecture
+
+```text
+                         ┌─────────────────────┐
+                         │    Jana Seva        │
+                         │   Main Agent        │
+                         │ Health Access       │
+                         └──────────┬──────────┘
+                                    │
+                     handoff when appointment/
+                     clinic assistance is needed
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │ Clinic & Appointment│
+                         │ Specialist Agent    │
+                         └─────────────────────┘
+```
+
+### 🎯 Key Capabilities
+1. **Seamless Handoff without Repetition**: User request, language preference, and known location context are automatically packaged and transferred.
+2. **Context-Aware Specialist Greeting**: The specialist introduces itself acknowledging the transferred intent directly (e.g. *"Hi, I'm Jana Seva's Clinic & Appointment Specialist. I understand you're looking for help with a general health consultation appointment..."*).
+3. **Safety & Boundaries**:
+   - Non-diagnostic & non-prescriptive limits.
+   - Emergency red-flags bypass handoff and trigger the **Day 7 Human Escalation** workflow.
+   - Never fabricates appointment availability or fake slots.
+4. **Handoff Logging & Day 8 Analytics Integration**: Every handoff is recorded with `handoff_id`, `call_id`, `from_agent`, `to_agent`, timestamp, and outcome.
+
+---
+
+## DAY 9 DEMO SCRIPT
+
+### Step 1 — General Question (No Handoff)
+1. User: *"What documents do I need to visit a government hospital?"*
+2. **Jana Seva Main Agent** answers directly: *"To visit a government hospital, please bring a valid government ID like an Aadhaar card or Ration card, along with any past prescriptions."* (No handoff occurs).
+
+### Step 2 — Specialist Handoff
+1. User: *"I want to find a clinic and get help with an appointment for a general consultation."*
+2. **Jana Seva Main Agent** announces out loud: *"I'll connect you with our Clinic & Appointment Specialist, who can help you with the appointment process."*
+3. Main agent invokes `handoff_to_clinic_specialist`.
+
+### Step 3 — Specialist Takes Over (Context Preserved)
+1. **Clinic & Appointment Specialist** introduces itself directly: *"Hi, I'm Jana Seva's Clinic & Appointment Specialist. I understand you're looking for help with a general health consultation appointment. Let's go through the available clinics and next steps."*
+2. Frontend UI updates top floating badge to display: **Clinic & Appointment Specialist**.
+3. User continues the conversation naturally without repeating their request.
+
+---
+
+## DAY 9 LINKEDIN POST DRAFT
+
+Day 9 of 10 Days of Voice Agents! 🇮🇳🎙️
+
+Today I built **Specialist Agent Handoff** into **Jana Seva**, our AI Voice Assistant for Health Access in India!
+
+Instead of expecting one monolithic agent to do everything, Jana Seva now uses a specialized multi-agent architecture. When a user asks for clinic discovery, department navigation, or appointment help, the main Jana Seva agent seamlessly hands the live call to the **Clinic & Appointment Specialist**.
+
+✨ Key Features Built:
+1. **Zero Repetition Context Transfer**: Language preference, caller district, and exact appointment intent are transferred instantly.
+2. **Context-Aware Specialist Greeting**: The specialist takes over naturally and references the user's intent without asking "How can I help you?".
+3. **Strict Safety & Emergency Boundaries**: Emergency red flags bypass specialist handoff and immediately trigger human emergency escalation.
+4. **Full Handoff Analytics & DB Logging**: All agent transitions are logged in SQLite and integrated into our call analytics.
+
+Powered by:
+⚡ **Murf Falcon TTS** for ultra-fast, natural conversational voice synthesis in Indian accents
+🚀 **LiveKit Agents** for seamless multi-agent session state transitions
+🎙️ **Deepgram Nova-3** & 🧠 **Google Gemini**
+
+Check out the demo video below!
+
+#VoiceForBharat #VoiceAgents #MurfAI #LiveKit #Python #NextJS #AI #PublicHealth #MultiAgent
+
+---
+
 ## Configuration
 
 ### Murf voice

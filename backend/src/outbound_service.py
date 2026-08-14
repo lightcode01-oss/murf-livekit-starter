@@ -44,10 +44,26 @@ class OutboundCallService:
         sip_trunk_id: Optional[str] = None,
     ) -> None:
         self.memory_service = memory_service or MemoryService()
-        self.account_sid = account_sid or os.getenv("TWILIO_ACCOUNT_SID", "")
-        self.auth_token = auth_token or os.getenv("TWILIO_AUTH_TOKEN", "")
-        self.twilio_phone = twilio_phone or os.getenv("TWILIO_PHONE_NUMBER", "")
-        self.sip_trunk_id = sip_trunk_id or os.getenv("LIVEKIT_SIP_TRUNK_ID", "")
+        self.account_sid = (
+            os.getenv("TWILIO_ACCOUNT_SID", "")
+            if account_sid is None
+            else account_sid
+        )
+        self.auth_token = (
+            os.getenv("TWILIO_AUTH_TOKEN", "")
+            if auth_token is None
+            else auth_token
+        )
+        self.twilio_phone = (
+            os.getenv("TWILIO_PHONE_NUMBER", "")
+            if twilio_phone is None
+            else twilio_phone
+        )
+        self.sip_trunk_id = (
+            os.getenv("LIVEKIT_SIP_TRUNK_ID", "")
+            if sip_trunk_id is None
+            else sip_trunk_id
+        )
         self.retry_counts: dict[str, int] = {}
 
     def validate_config(self) -> tuple[bool, str]:
