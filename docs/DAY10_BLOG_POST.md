@@ -43,25 +43,87 @@ A voice AI agent requires far tighter latency budgets than traditional web chat 
 
 To achieve conversational fluidity, Jana Seva couples **Murf Falcon TTS** (offering sub-100ms model latency) with **LiveKit Agents WebRTC transport**, **Deepgram Nova-3 multilingual STT**, and **Google Gemini LLM**.
 
-```text
-                                  ┌───────────────────────────┐
-                                  │   Browser / Phone User    │
-                                  └─────────────┬─────────────┘
-                                                │
-                                    WebRTC Audio Stream (Opus)
-                                                │
-                                                ▼
-                                  ┌───────────────────────────┐
-                                  │      LiveKit Server       │
-                                  └─────────────┬─────────────┘
-                                                │
-                 ┌──────────────────────────────┼──────────────────────────────┐
-                 │                              │                              │
-                 ▼                              ▼                              ▼
-    ┌──────────────────────────┐   ┌──────────────────────────┐   ┌──────────────────────────┐
-    │  Deepgram STT (Nova-3)   │   │ Google Gemini 3.5 Lite   │   │  Murf Falcon Streaming   │
-    │  Multilingual Endpointing│   │ Tool Calling & Reasoning │   │  HI-IN / EN Conversational│
-    └──────────────────────────┘   └──────────────────────────┘   └──────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph ClientLayer["📱 Client & Ingestion Layer"]
+        Browser["🌐 Web Browser App\n(Next.js + LiveKit React UI)"]
+        Telephony["📞 Phone / Telephony\n(Twilio SIP Trunk)"]
+    end
+
+    subgraph TransportLayer["⚡ Real-Time Transport & Audio Processing (LiveKit Server)"]
+        WebRTC["📡 LiveKit WebRTC Transport\n(Opus Audio Streams)"]
+        NoiseCancel["🔇 Noise Cancellation\n(BVC / BVCTelephony)"]
+        VAD["🎙️ Silero VAD &\nMultilingual Turn Detector"]
+    end
+
+    subgraph SpeechLayer["🗣️ Speech Recognition & Synthesis"]
+        STT["📝 Deepgram Nova-3 STT\n(Multilingual Endpointing)"]
+        TTS["🔊 Murf Falcon TTS\n(Sub-100ms Streaming Voice)"]
+    end
+
+    subgraph AgentLayer["🧠 Multi-Agent AI Core (Python livekit-agents)"]
+        SessionManager["🎛️ AgentSession Controller"]
+        
+        subgraph Agents["Agent Lifecycle & Handoff"]
+            MainAgent["🏥 Main Jana Seva Agent\n(Health Access & Safety)"]
+            SpecialistAgent["🩺 Clinic & Specialist Agent\n(Appointments & Navigation)"]
+        end
+
+        LLM["🤖 Google Gemini 3.5 Lite\n(Reasoning & Tool Calling)"]
+    end
+
+    subgraph IntegrationLayer["🔌 Tools & External Data Services"]
+        OSM_API["🗺️ OpenStreetMap Nominatim API\n(Live PHC / Hospital Lookup)"]
+        AQI_API["🌤️ Open-Meteo AQI API\n(Live AQI & Health Advisory)"]
+        Twilio_API["📲 Twilio Telephony Service\n(Outbound Voice Reminders)"]
+    end
+
+    subgraph DataLayer["💾 Persistence & Analytics (SQLite DB)"]
+        DB_Users["👤 Users Memory\n(Consent-Based Profiles)"]
+        DB_Escalations["🚨 Escalations\n(Human Help & Ref IDs)"]
+        DB_Calls["📊 Call Analytics\n(Duration & Success Rate)"]
+        DB_Handoffs["🔄 Handoff Logs\n(Agent Transition History)"]
+    end
+
+    subgraph DashboardLayer["🖥️ Web Operations Dashboards"]
+        DashMain["🎙️ Live Voice Experience (/)"]
+        DashEscalations["🚑 Escalation Management (/escalations)"]
+        DashAnalytics["📈 Real-Time Analytics (/analytics)"]
+    end
+
+    %% Flow Connections
+    Browser <-->|Audio / RTC| WebRTC
+    Telephony <-->|SIP / Audio| WebRTC
+    WebRTC --> NoiseCancel --> VAD --> STT
+    STT -->|Transcripts| SessionManager
+    SessionManager <--> Agents
+    Agents <-->|Prompt / Tools| LLM
+    Agents -->|Tool Calls| IntegrationLayer
+    Agents -->|Read / Write| DataLayer
+    Agents -->|Text Response| TTS
+    TTS -->|Streaming Audio| WebRTC
+
+    MainAgent == "handoff_to_clinic_specialist\n(In-Place Agent Switch)" ==> SpecialistAgent
+    SpecialistAgent == "handback_to_main_agent" ==> MainAgent
+
+    DataLayer -->|API Routes| DashboardLayer
+
+    %% Styling
+    classDef client fill:#1f2937,stroke:#6b7280,color:#fff;
+    classDef transport fill:#1e3a8a,stroke:#3b82f6,color:#fff;
+    classDef speech fill:#065f46,stroke:#10b981,color:#fff;
+    classDef agent fill:#581c87,stroke:#a855f7,color:#fff;
+    classDef integration fill:#831843,stroke:#ec4899,color:#fff;
+    classDef data fill:#78350f,stroke:#f59e0b,color:#fff;
+    classDef dash fill:#14532d,stroke:#22c55e,color:#fff;
+
+    class Browser,Telephony client;
+    class WebRTC,NoiseCancel,VAD transport;
+    class STT,TTS speech;
+    class SessionManager,MainAgent,SpecialistAgent,LLM agent;
+    class OSM_API,AQI_API,Twilio_API integration;
+    class DB_Users,DB_Escalations,DB_Calls,DB_Handoffs data;
+    class DashMain,DashEscalations,DashAnalytics dash;
 ```
 
 ### Audio Pipeline Control Flow
