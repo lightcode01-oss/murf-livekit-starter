@@ -1,148 +1,491 @@
-# Voice Agent Starter — Powered by Murf Falcon
+# 🇮🇳 Jana Seva — AI Voice Agent for Health Access
 
-Build a production voice AI agent in 5 minutes. Powered by the fastest TTS on the market - swap the system prompt to build anything from customer support to language tutors.
+> **Healthcare, in your voice.**
+>
+> Jana Seva is a voice-first Health Access AI assistant built for the **10 Days of Voice Agents — VoiceForBharat Edition**. It helps users navigate public-health information and healthcare access through natural voice conversations, real-time tools, consent-based human escalation, outbound reminders, call analytics, and specialist-agent handoffs.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Murf Falcon](https://img.shields.io/badge/TTS-Murf%20Falcon-6366F1)](https://murf.ai/api/docs/text-to-speech/streaming) [![LiveKit](https://img.shields.io/badge/Transport-LiveKit-002cf2)](https://docs.livekit.io) [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+**Track:** Health Access  
+**Voice:** Murf Falcon  
+**Real-time transport:** LiveKit Agents  
+**STT:** Deepgram Nova-3  
+**LLM:** Google Gemini  
+**Frontend:** Next.js / React  
+**Backend:** Python / LiveKit Agents  
+**Persistence:** SQLite
 
 ---
 
-## Why Murf Falcon
+## ✨ What Jana Seva Does
 
-- **55ms model latency** - fastest production TTS
-- **130ms time-to-first-audio** across 10+ global regions
-- **$0.01/1000 characters** - up to 10x cheaper than alternatives
-- **150+ voices** across 35+ languages
-- **99.38% pronunciation accuracy**
+Jana Seva is designed around a simple principle:
+
+> **A voice agent should know not only how to answer, but also when to use real data, when to stop, when to ask for human help, and when another specialist should take over.**
+
+Core capabilities:
+
+- 🎙️ Real-time browser-based voice conversations
+- 🇮🇳 Indian voice experience powered by Murf Falcon
+- 🧠 Consent-based caller memory
+- 🛠️ Real-world healthcare and environmental data tools
+- 📍 Nearby PHC / CHC / hospital / Jan Aushadhi lookup
+- 🌤️ District-level AQI and environmental health advisory
+- 📞 Controlled outbound health-reminder calls
+- 🚨 Consent-based human escalation
+- 🆔 Escalation reference IDs and urgency levels
+- 📊 Real call analytics from SQLite records
+- 🔄 Main-agent → specialist-agent handoff
+- 🩺 Clinic & Appointment Specialist
+- 🌐 English, Hindi and Hinglish interaction paths
+- 🔒 Operational dashboards designed to avoid exposing sensitive caller information
 
 ---
 
-## System Architecture
+## 🧭 The 10-Day Journey
+
+| Day | Capability |
+|---|---|
+| Day 1 | Voice agent foundation |
+| Day 2 | Agent objectives, personality and safety boundaries |
+| Day 3 | Guardrails and safe health-access behavior |
+| Day 4 | Caller memory and returning-user context |
+| Day 5 | Real-time domain data tools |
+| Day 6 | Controlled outbound calls |
+| Day 7 | Human escalation |
+| Day 8 | Call analytics dashboard |
+| Day 9 | Specialist-agent handoff |
+| Day 10 | Project documentation and public build journey |
+
+---
+
+# 🏗️ System Architecture
 
 ```mermaid
 flowchart TB
-    subgraph ClientLayer["📱 Client & Ingestion Layer"]
-        Browser["🌐 Web Browser App\n(Next.js + LiveKit React UI)"]
-        Telephony["📞 Phone / Telephony\n(Twilio SIP Trunk)"]
-    end
+    Browser["🌐 Browser / Next.js UI"]
+    Telephony["📞 Twilio / SIP Telephony"]
 
-    subgraph TransportLayer["⚡ Real-Time Transport & Audio Processing (LiveKit Server)"]
-        WebRTC["📡 LiveKit WebRTC Transport\n(Opus Audio Streams)"]
-        NoiseCancel["🔇 Noise Cancellation\n(BVC / BVCTelephony)"]
-        VAD["🎙️ Silero VAD &\nMultilingual Turn Detector"]
-    end
+    Browser <-->|WebRTC audio| LiveKit["⚡ LiveKit Real-Time Transport"]
+    Telephony <-->|SIP audio| LiveKit
 
-    subgraph SpeechLayer["🗣️ Speech Recognition & Synthesis"]
-        STT["📝 Deepgram Nova-3 STT\n(Multilingual Endpointing)"]
-        TTS["🔊 Murf Falcon TTS\n(Sub-100ms Streaming Voice)"]
-    end
+    LiveKit --> VAD["🎙️ VAD + Turn Detection"]
+    VAD --> STT["📝 Deepgram Nova-3 STT"]
+    STT --> Session["🎛️ Agent Session"]
 
-    subgraph AgentLayer["🧠 Multi-Agent AI Core (Python livekit-agents)"]
-        SessionManager["🎛️ AgentSession Controller"]
-        
-        subgraph Agents["Agent Lifecycle & Handoff"]
-            MainAgent["🏥 Main Jana Seva Agent\n(Health Access & Safety)"]
-            SpecialistAgent["🩺 Clinic & Specialist Agent\n(Appointments & Navigation)"]
-        end
+    Session --> Main["🏥 Jana Seva Main Agent"]
+    Main --> LLM["🧠 Google Gemini"]
+    Main --> Tools["🛠️ Health & Data Tools"]
 
-        LLM["🤖 Google Gemini 3.5 Lite\n(Reasoning & Tool Calling)"]
-    end
+    Main --> Specialist["🩺 Clinic & Appointment Specialist"]
+    Main --> Escalation["🚨 Human Escalation"]
 
-    subgraph IntegrationLayer["🔌 Tools & External Data Services"]
-        OSM_API["🗺️ OpenStreetMap Nominatim API\n(Live PHC / Hospital Lookup)"]
-        AQI_API["🌤️ Open-Meteo AQI API\n(Live AQI & Health Advisory)"]
-        Twilio_API["📲 Twilio Telephony Service\n(Outbound Voice Reminders)"]
-    end
+    Tools --> OSM["🗺️ OpenStreetMap / Nominatim"]
+    Tools --> AQI["🌤️ Open-Meteo"]
 
-    subgraph DataLayer["💾 Persistence & Analytics (SQLite DB)"]
-        DB_Users["👤 Users Memory\n(Consent-Based Profiles)"]
-        DB_Escalations["🚨 Escalations\n(Human Help & Ref IDs)"]
-        DB_Calls["📊 Call Analytics\n(Duration & Success Rate)"]
-        DB_Handoffs["🔄 Handoff Logs\n(Agent Transition History)"]
-    end
+    Main --> Outbound["📞 Outbound Reminder Workflow"]
+    Outbound --> Twilio["📲 Twilio"]
 
-    subgraph DashboardLayer["🖥️ Web Operations Dashboards"]
-        DashMain["🎙️ Live Voice Experience (/)"]
-        DashEscalations["🚑 Escalation Management (/escalations)"]
-        DashAnalytics["📈 Real-Time Analytics (/analytics)"]
-    end
+    Main --> DB["💾 SQLite"]
+    Specialist --> DB
+    Escalation --> DB
+    Outbound --> DB
 
-    %% Flow Connections
-    Browser <-->|Audio / RTC| WebRTC
-    Telephony <-->|SIP / Audio| WebRTC
-    WebRTC --> NoiseCancel --> VAD --> STT
-    STT -->|Transcripts| SessionManager
-    SessionManager <--> Agents
-    Agents <-->|Prompt / Tools| LLM
-    Agents -->|Tool Calls| IntegrationLayer
-    Agents -->|Read / Write| DataLayer
-    Agents -->|Text Response| TTS
-    TTS -->|Streaming Audio| WebRTC
+    DB --> Analytics["📊 Call Analytics"]
+    DB --> Escalations["🚑 Escalation Command Center"]
 
-    MainAgent == "handoff_to_clinic_specialist\n(In-Place Agent Switch)" ==> SpecialistAgent
-    SpecialistAgent == "handback_to_main_agent" ==> MainAgent
+    Main --> TTS["🔊 Murf Falcon TTS"]
+    Specialist --> TTS
+    TTS --> LiveKit
+```
 
-    DataLayer -->|API Routes| DashboardLayer
+### Audio path
 
-    %% Styling
-    classDef client fill:#1f2937,stroke:#6b7280,color:#fff;
-    classDef transport fill:#1e3a8a,stroke:#3b82f6,color:#fff;
-    classDef speech fill:#065f46,stroke:#10b981,color:#fff;
-    classDef agent fill:#581c87,stroke:#a855f7,color:#fff;
-    classDef integration fill:#831843,stroke:#ec4899,color:#fff;
-    classDef data fill:#78350f,stroke:#f59e0b,color:#fff;
-    classDef dash fill:#14532d,stroke:#22c55e,color:#fff;
-
-    class Browser,Telephony client;
-    class WebRTC,NoiseCancel,VAD transport;
-    class STT,TTS speech;
-    class SessionManager,MainAgent,SpecialistAgent,LLM agent;
-    class OSM_API,AQI_API,Twilio_API integration;
-    class DB_Users,DB_Escalations,DB_Calls,DB_Handoffs data;
-    class DashMain,DashEscalations,DashAnalytics dash;
+```text
+User microphone
+      ↓
+LiveKit WebRTC
+      ↓
+Voice activity / turn detection
+      ↓
+Deepgram Nova-3
+      ↓
+Jana Seva Agent
+      ↓
+Google Gemini + tools
+      ↓
+Murf Falcon
+      ↓
+LiveKit
+      ↓
+User speaker
 ```
 
 ---
 
-## Quickstart
+# 📸 Project Screenshots
 
-### Prerequisites
+### 1. Jana Seva Homepage
 
-- **Python** 3.10+
-- **[uv](https://docs.astral.sh/uv/)** - fast Python package manager
-  ```bash
-  # macOS/Linux
-  curl -LsSf https://astral.sh/uv/install.sh | sh
-  # Windows (PowerShell)
-  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-  ```
-- **Node.js** 18+
-- **pnpm** — fast Node package manager
-  ```bash
-  npm install -g pnpm
-  ```
-- A [LiveKit](https://cloud.livekit.io/) project (free tier available)
+![Jana Seva Homepage](docs/screenshots/01-homepage.png)
 
-### Step 1: Clone the repo
+The landing experience introduces Jana Seva as a public-health voice assistant and provides the entry point into the live voice session.
 
-```bash
-git clone https://github.com/murf-ai/murf-livekit-starter.git
-cd murf-livekit-starter
+### 2. Live Voice Session
+
+![Live Voice Session](docs/screenshots/02-live-voice-session.png)
+
+The browser-based agent shows the active listening state, conversation area and live call controls.
+
+### 3. Human Escalation Command Center
+
+![Human Escalation Dashboard](docs/screenshots/03-human-escalation-dashboard.png)
+
+The escalation dashboard organizes requests by urgency and status, including emergency, high, open, in-progress and resolved workflows.
+
+> **Privacy note:** This screenshot contains demonstration records. If any displayed names or medical details represent real people rather than synthetic demo data, do not publish this image publicly. Use synthetic demo data before making the repository public.
+
+### 4. Call Analytics Dashboard
+
+![Call Analytics Dashboard](docs/screenshots/04-call-analytics-dashboard.png)
+
+The analytics command center shows total calls, successful calls, failed calls and success rate using actual stored call records.
+
+### 5. Specialist Agent Handoff
+
+![Specialist Agent Handoff](docs/screenshots/05-specialist-handoff.png)
+
+The main agent announces the handoff and the Clinic & Appointment Specialist continues the conversation with transferred context.
+
+---
+
+# 🛠️ Day 5 — Real-Time Domain Data Tools
+
+Jana Seva uses function-calling tools to obtain useful health-access and environmental information.
+
+## Nearby health facilities
+
+```text
+fetch_nearest_phc_facility(
+    district,
+    facility_type,
+    user_id
+)
 ```
 
-### Step 2: Set up environment variables
+It supports lookup of:
 
-Create `.env.local` in both `backend/` and `frontend/` (copy from `.env.example` in each). You need:
+- Primary Health Centres
+- Community Health Centres
+- District Hospitals
+- Jan Aushadhi generic medicine stores
 
-| Variable                               | Where to get it                                        | Required |
-| -------------------------------------- | ------------------------------------------------------ | -------- |
-| `LIVEKIT_URL`                          | LiveKit Cloud dashboard                                | Yes      |
-| `LIVEKIT_API_KEY`                      | LiveKit Cloud dashboard                                | Yes      |
-| `LIVEKIT_API_SECRET`                   | LiveKit Cloud dashboard                                | Yes      |
-| `MURF_API_KEY`                         | [murf.ai/api/dashboard](https://murf.ai/api/dashboard) | Yes      |
-| `DEEPGRAM_API_KEY`                     | [deepgram.com](https://deepgram.com)                   | Yes      |
-| `GOOGLE_API_KEY` (or `OPENAI_API_KEY`) | Depends on LLM choice                                  | Yes      |
+The workflow uses OpenStreetMap Nominatim for live lookup and a cached local registry as a fallback.
 
-### Step 3: Install backend dependencies
+If the district is already available from the caller's saved context, the tool can reuse it rather than asking the user again.
+
+The tool also includes explicit data timestamps and a spoken fallback path when the live service is unavailable.
+
+## District health advisory
+
+```text
+fetch_district_health_advisory(
+    district,
+    user_id
+)
+```
+
+The advisory workflow can retrieve:
+
+- AQI
+- PM2.5
+- PM10
+- Temperature
+- Respiratory precautions
+
+The source is Open-Meteo's Air Quality and Weather API.
+
+---
+
+# 📞 Day 6 — Controlled Outbound Calls
+
+Jana Seva supports controlled outbound health-reminder workflows such as:
+
+- Vaccination follow-ups
+- Medication reminders
+
+The telephony path uses **Twilio + LiveKit SIP outbound trunking**.
+
+### Safety and compliance behavior
+
+The outbound workflow:
+
+1. Identifies Jana Seva.
+2. Explains why the call is being made.
+3. Gives the user a clear way to opt out.
+4. Immediately handles an opt-out request.
+5. Records the call outcome.
+6. Limits automatic retries.
+7. Avoids disclosing sensitive medical information in voicemail.
+
+Supported outcome examples:
+
+```text
+ANSWERED
+NO_ANSWER
+BUSY
+VOICEMAIL
+HANGUP
+FAILED
+OPTED_OUT
+REMINDER_MISSING
+```
+
+Outbound calls are intended for controlled demonstration/testing and not unsolicited bulk calling.
+
+---
+
+# 🚨 Day 7 — Human Escalation
+
+Jana Seva does not attempt to solve every situation itself.
+
+Two important escalation conditions are:
+
+1. **Red-flag symptoms / emergency situations**
+2. **Requests for diagnosis or medical decisions outside the agent's safe scope**
+
+The workflow is designed to:
+
+```text
+Detect escalation condition
+        ↓
+Explain why human help is needed
+        ↓
+Tell the caller what information will be shared
+        ↓
+Ask for permission
+        ↓
+Create concise escalation request
+        ↓
+Assign urgency + reference ID
+        ↓
+Explain the next step honestly
+```
+
+The human-facing request is intended to contain only useful operational information:
+
+- Who needs help
+- What happened
+- What the agent already checked
+- Urgency
+- Language
+- Preferred follow-up method
+
+Sensitive information such as passwords, OTPs, PINs, account numbers and unnecessary full transcripts should not be included.
+
+The escalation dashboard shown in the project demo supports:
+
+- Emergency
+- High
+- Medium
+- Low
+- Open
+- In Progress
+- Resolved
+- Search by reference / name / summary
+
+---
+
+# 📊 Day 8 — Call Analytics Dashboard
+
+Jana Seva records call outcomes in SQLite and exposes them through an operational dashboard.
+
+## Definition of success
+
+A call is considered **successful** when the caller safely receives the requested health-access information or when Jana Seva correctly identifies the need for human assistance and completes the consent-based escalation workflow.
+
+A call is considered **failed** when it ends before reaching the intended outcome, such as an incomplete task, tool failure, API error or agent error.
+
+## Required dashboard metrics
+
+- **Total Calls**
+- **Successful Calls**
+- **Failed Calls**
+
+The dashboard also includes a success-rate view and operational call history.
+
+Example database fields:
+
+```text
+id
+call_id
+channel
+started_at
+ended_at
+duration_seconds
+outcome
+failure_reason
+language
+```
+
+Possible channels:
+
+```text
+browser
+sip
+```
+
+Possible outcomes:
+
+```text
+successful
+failed
+in_progress
+```
+
+The analytics view is designed to expose operational metadata rather than sensitive health information.
+
+---
+
+# 🩺 Day 9 — Specialist Agent Handoff
+
+One agent should not be an expert at everything.
+
+Jana Seva therefore separates the general Health Access agent from a focused:
+
+> **Clinic & Appointment Specialist**
+
+The main agent hands off when the user needs:
+
+- Clinic discovery
+- Department navigation
+- Appointment assistance
+
+## Handoff flow
+
+```text
+User request
+     ↓
+Jana Seva Main Agent
+     ↓
+Does this require appointment/clinic specialization?
+     ↓
+Yes
+     ↓
+Tell user about handoff
+     ↓
+handoff_to_clinic_specialist
+     ↓
+Clinic & Appointment Specialist
+     ↓
+Continue with transferred context
+```
+
+The user does not need to repeat the entire problem.
+
+Transferred context can include:
+
+- User intent
+- Language preference
+- Known location context
+- Appointment intent
+
+Emergency red flags bypass specialist routing and use the human-escalation path instead.
+
+The specialist does not fabricate appointment availability or fake slots.
+
+---
+
+# 🔒 Safety and Privacy Principles
+
+Jana Seva is a Health Access assistant, not a replacement for a qualified medical professional.
+
+The agent is designed to:
+
+- Avoid pretending to diagnose.
+- Avoid pretending to prescribe.
+- Avoid inventing appointment availability.
+- Escalate emergency or out-of-scope situations.
+- Ask permission before sharing escalation information.
+- Avoid exposing private operational data on public dashboards.
+- Keep API credentials outside source control.
+- Provide honest failure messages when external tools are unavailable.
+
+### Never commit
+
+```text
+.env
+.env.local
+API keys
+API secrets
+Twilio auth tokens
+LiveKit secrets
+Private caller data
+Real medical records
+Passwords
+OTP/PIN information
+```
+
+---
+
+# ⚙️ Quickstart
+
+## Prerequisites
+
+- Python 3.10+
+- `uv`
+- Node.js 18+
+- `pnpm`
+- LiveKit project
+- Murf API key
+- Deepgram API key
+- Google API key
+
+### Install uv
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+macOS/Linux:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### Install pnpm
+
+```bash
+npm install -g pnpm
+```
+
+---
+
+# 🔑 Environment Variables
+
+Create local environment files from the project's `.env.example` files.
+
+Typical backend configuration:
+
+```env
+LIVEKIT_URL=your_livekit_url
+LIVEKIT_API_KEY=your_livekit_api_key
+LIVEKIT_API_SECRET=your_livekit_api_secret
+
+MURF_API_KEY=your_murf_api_key
+DEEPGRAM_API_KEY=your_deepgram_api_key
+GOOGLE_API_KEY=your_google_api_key
+```
+
+For outbound calling, configure the required Twilio and LiveKit SIP variables locally.
+
+**Never place real secrets in this README or in Git.**
+
+---
+
+# ▶️ Running Locally
+
+## Backend
 
 ```bash
 cd backend
@@ -150,407 +493,246 @@ uv sync
 uv run python src/agent.py download-files
 ```
 
-### Step 4: Install frontend dependencies
+## Frontend
 
 ```bash
 cd frontend
 pnpm install
 ```
 
-### Step 5: Run it
+## Start the application
 
-**Option A - All-in-one (from repo root):**
+### Windows
 
-```bash
-# macOS/Linux
-chmod +x start_app.sh
-./start_app.sh
-
-# Windows (PowerShell)
+```powershell
 .\start_app.ps1
 ```
 
-**Option B - Separate terminals:**
+### macOS/Linux
 
 ```bash
-# Terminal 1 — LiveKit Server
+chmod +x start_app.sh
+./start_app.sh
+```
+
+Or run services separately:
+
+```bash
+# Terminal 1
 livekit-server --dev
 
-# Terminal 2 — Backend agent
-cd backend && uv run python src/agent.py dev
-
-# Terminal 3 — Frontend
-cd frontend && pnpm dev
-```
-
-Then open **http://localhost:3000** in your browser.
-
-You should now see the voice agent UI. Click **Start talking**, allow microphone access, and speak — the agent will respond with Murf Falcon TTS. Ensure your backend and (if using Option B) LiveKit server are running.
-
----
-
-## Deploy
-
-Want to deploy this beyond localhost? You'll need to deploy **two services**: the backend agent and the frontend. Both must use the same LiveKit project.
-
-> This is a two-service app — the backend agent and the frontend UI deploy separately. You'll need both running and connected to the same LiveKit project.
-
-### Backend (Python agent) — Deploy to Railway
-
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/tIVCF1?referralCode=cNjn2P&utm_medium=integration&utm_source=template&utm_campaign=generic)
-
-Set these environment variables in Railway:
-
-- `MURF_API_KEY`
-- `DEEPGRAM_API_KEY`
-- `GOOGLE_API_KEY` or `OPENAI_API_KEY`
-- `LIVEKIT_URL`
-- `LIVEKIT_API_KEY`
-- `LIVEKIT_API_SECRET`
-
-The backend runs as a long-lived Python process that connects to LiveKit as an agent. Railway handles this well.
-
-### Frontend (Next.js) — Deploy to Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/murf-ai/murf-livekit-starter&root-directory=frontend&env=LIVEKIT_URL,LIVEKIT_API_KEY,LIVEKIT_API_SECRET&project-name=murf-voice-agent&repository-name=murf-voice-agent)
-
-Set these environment variables in Vercel:
-
-- `LIVEKIT_URL`
-- `LIVEKIT_API_KEY`
-- `LIVEKIT_API_SECRET`
-- `AGENT_NAME` (optional — for explicit agent dispatch)
-
-The frontend is a standard Next.js app. Point it at the same LiveKit instance your backend agent is connected to.
-
-### Connecting them
-
-The frontend and backend don't call each other directly — they both connect to **LiveKit**, which handles the real-time audio transport.
-
-1. Use the **same** `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` on both Railway and Vercel
-2. Set `AGENT_NAME=my-agent` on Vercel — this matches the `agent_name="my-agent"` registered in `backend/src/agent.py`
-3. Verify: Railway logs should show the agent connected to LiveKit. Open your Vercel URL, click **Start talking** — the agent should respond
-
-If the agent doesn't connect, double-check that both services point to the same LiveKit project and that the backend is running (check Railway logs).
-
----
-
-## Change the Use Case
-
-The default system prompt makes this a **customer support agent**. You can change the agent’s behavior by editing the prompt.
-
-**Where the prompt lives:** `backend/src/agent.py`- the `SYSTEM_PROMPT` constant (near the top of the file, after the imports). Change that string to change what your voice agent does.
-
-### Example prompts (copy-paste)
-
-**Customer Support (default):**
-
-```
-You are a friendly and efficient customer support agent for a tech company. Help users with account issues, billing questions, and product troubleshooting. Be concise, empathetic, and solution-oriented. If you don't know something, say so honestly and offer to escalate.
-```
-
-**Language Tutor:**
-
-```
-You are a patient and encouraging language tutor helping the user practice conversational Spanish. Speak primarily in Spanish but switch to English to explain grammar or vocabulary when needed. Correct mistakes gently and suggest better phrasing. Keep conversations natural and fun.
-```
-
-**AI Receptionist:**
-
-```
-You are a professional receptionist for a medical clinic. Help callers schedule appointments, answer questions about office hours and services, and take messages for doctors. Be warm but efficient. Ask for the caller's name and reason for calling upfront.
-```
-
-See the Configuration section below for voice, STT, and LLM options.
-
----
-
-## Day 5 — Real-Time Domain Data Tools (Health Access Track)
-
-The **Jana Seva / Dr. Swasthya Sathi** voice AI agent includes real-world function calling tools that fetch live health and environmental data off the internet, handle API timeouts gracefully out loud, state explicit data timestamps, and chain with Day 4 caller memory.
-
-### 🛠️ Function Tools Implemented
-
-1. **`fetch_nearest_phc_facility(district, facility_type, user_id)`**:
-   - **Purpose**: Live lookup of nearby Primary Health Centres (PHC), Community Health Centres (CHC), District Hospitals, and Jan Aushadhi generic chemist stores.
-   - **Data Sources**:
-     - **Live API**: OpenStreetMap Nominatim Healthcare Directory search.
-     - **Local Dataset Fallback**: Embedded cached registry of government health facilities for major Indian districts (Jaipur, Lucknow, Delhi, Patna, Bhopal, etc.).
-   - **Tool Chaining (Advanced)**: If `district` is omitted by the user, the agent automatically retrieves `district` from the caller's Day 4 persistent SQLite memory without prompting again.
-   - **Data Timestamp**: Every payload includes an explicit timestamp (e.g. *"As of August 10, 2026 at 21:30 IST"*).
-   - **Spoken Failure Path**: If the live API times out, the tool catches the exception gracefully, flags `network_timeout_fallback`, and instructs the agent to state the network timeout out loud while presenting cached government registry data.
-
-2. **`fetch_district_health_advisory(district, user_id)`**:
-   - **Purpose**: Real-time environmental health advisory fetching live Air Quality Index (AQI), PM2.5, PM10, temperature, and respiratory precautions for vulnerable patients.
-   - **Data Source**: Live Open-Meteo Air Quality & Weather API (no API key required).
-   - **Data Timestamp**: Explicit live sensor measurement timestamp (e.g. *"Recorded live as of August 10, 2026"*).
-   - **Failure Path**: Graceful fallback matrix with out-loud spoken failure notification if sensors time out.
-
----
-
-## Day 6 — Outbound Calls (Jana Seva Health Access)
-
-The **Jana Seva / Dr. Swasthya Sathi** agent can place automated outbound phone calls for healthcare reminder follow-ups (e.g., vaccination follow-ups, medication reminders) using Twilio Telephony and LiveKit SIP Outbound Trunking.
-
-### 📞 Outbound Features & Compliance
-
-- **Use Case**: Vaccination & Medication Reminder follow-up for approved community health beneficiaries.
-- **Telephony Provider**: Twilio REST API + LiveKit SIP Outbound Trunking.
-- **Mandatory 3-Part Opening Sentence**:
-  When the caller answers, the agent speaks the required 3-part opening sentence in the first two sentences:
-  1. *Who is calling*: "Hello, this is Jana Seva calling..."
-  2. *Why calling*: "...with a health reminder you previously requested."
-  3. *How to stop future calls*: "If you don't want these calls, just tell me and I won't call you again."
-- **Strict Opt-Out Handling**:
-  If the user asks to stop calling (e.g., "Don't call me", "Stop calling", "No more calls", "कॉल मत करना"), the agent immediately calls `opt_out_caller`, acknowledges politely, and ends the call cleanly.
-- **Call Outcome Tracking**:
-  Logs call outcomes (`ANSWERED`, `NO_ANSWER`, `BUSY`, `VOICEMAIL`, `HANGUP`, `FAILED`, `OPTED_OUT`, `REMINDER_MISSING`).
-- **Conservative Retry Limit**:
-  Maximum automatic retry count is capped at `1` retry to prevent repeated dialing or infinite retry loops.
-- **Safe Voicemail Policy**:
-  If voicemail is detected, the agent leaves only a safe non-sensitive notification without disclosing medical history or diagnoses.
-
-### 🔑 Environment Variables Required
-
-Add to `backend/.env.local`:
-```bash
-TWILIO_ACCOUNT_SID=AC_YOUR_TWILIO_ACCOUNT_SID
-TWILIO_AUTH_TOKEN=YOUR_TWILIO_AUTH_TOKEN
-TWILIO_PHONE_NUMBER=+15005550006
-OUTBOUND_DESTINATION_NUMBER=+91XXXXXXXXXX
-LIVEKIT_SIP_TRUNK_ID=ST_YOUR_LIVEKIT_SIP_TRUNK_ID
-```
-
-### 🚀 Triggering an Outbound Call
-
-```bash
+# Terminal 2
 cd backend
-uv run python src/outbound_call.py --phone "+91XXXXXXXXXX" --user-id "demo_caller_ramesh"
+uv run python src/agent.py dev
+
+# Terminal 3
+cd frontend
+pnpm dev
 ```
 
-> **Disclaimer**: Outbound calls are currently intended for controlled demonstration/testing and should not be used for unsolicited bulk calling.
+Then open:
+
+```text
+http://localhost:3000
+```
+
+Allow microphone access and start a conversation with Jana Seva.
 
 ---
 
-## Day 8 — Call Analytics Dashboard
+# 🧪 Analytics Test
 
-Jana Seva includes a real-time, privacy-conscious **Call Analytics Dashboard** powered by actual conversation records in the local SQLite database (`jana_seva.db`).
+From the backend:
 
-### 📊 Definition of Success & Failure
-- **Successful Call**: The caller safely receives the requested health-access information (e.g. PHC location lookup, government scheme eligibility details, symptom triage advice, ASHA visit logging, AQI advisory) OR Jana Seva correctly identifies that the situation requires human assistance and completes the human escalation workflow with caller permission.
-- **Failed Call**: The call disconnects before reaching the intended outcome (e.g. caller hangs up early, required tool/database error, critical API timeout, or unhandled exception).
-
-### 🗄️ Database Model (`calls` table)
-- `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
-- `call_id` (TEXT UNIQUE)
-- `channel` (`'browser'` | `'sip'`)
-- `started_at` (ISO timestamp)
-- `ended_at` (ISO timestamp)
-- `duration_seconds` (INTEGER)
-- `outcome` (`'successful'` | `'failed'` | `'in_progress'`)
-- `failure_reason` (`'user_hangup'`, `'incomplete_task'`, `'tool_failure'`, `'api_error'`, `'agent_error'`, `NULL`)
-- `language` (`'English'`, `'Hindi'`, `'Hinglish'`)
-
-### ⚡ Analytics API Endpoints & CLI
-- `GET /api/analytics` (Next.js route) — Returns `{ success: true, summary: { total_calls, successful_calls, failed_calls, success_rate }, recent: [...] }`
-- `uv run python src/analytics_api.py summary` — Fetches aggregate metrics directly via CLI.
-- `uv run python src/analytics_api.py recent --outcome <val> --channel <val>` — Fetches recent call history records.
-
-### 🌐 Dashboard Route
-- Navigate to **`/analytics`** in the browser to view the Command Center dashboard.
-- Includes 4 metric cards: Total Calls, Successful Calls, Failed Calls, and Success Rate (%).
-- Supports outcome and channel filters with live database polling every 3 seconds.
-
-### 🔒 Privacy Protections
-- Healthcare data privacy compliance: **No personally identifiable information (PII)**, symptoms, medical diagnoses, transcripts, passwords, or API keys are stored or exposed on the public analytics dashboard. Only safe operational metadata is rendered.
-
-### 🧪 How to Run Tests
 ```bash
 cd backend
 uv run pytest tests/test_analytics.py
 ```
 
----
-
-## DAY 8 DEMO SCRIPT
-
-### 1. Pre-call Baseline Check
-1. Open `http://localhost:3000/analytics`.
-2. Observe initial counters:
-   - **Total Calls**: `0` (or current baseline count)
-   - **Successful Calls**: `0`
-   - **Failed Calls**: `0`
-
-### 2. Browser Voice Session
-1. Navigate back to `http://localhost:3000`.
-2. Click **"🎙️ Talk to Jana Seva"** and allow microphone access.
-3. User asks: *"What documents do I need to visit a government hospital?"*
-4. Jana Seva responds: *"To visit a government hospital, please carry a valid identity proof like your Aadhaar card or Ration Card, along with any previous medical prescription or test reports if available."*
-5. Click **End Call**.
-
-### 3. Real-Time Analytics Verification
-1. Open or return to `http://localhost:3000/analytics`.
-2. Confirm the dashboard automatically updates in real-time via live sync:
-   - **Total Calls**: Increments by `1` (e.g. `1`)
-   - **Successful Calls**: Increments by `1` (e.g. `1`)
-   - **Failed Calls**: Remains unchanged (`0`)
-   - **Success Rate**: `100.0%`
-   - **Recent Call History**: Displays new record with channel `browser`, formatted duration, and status badge `Successful`.
-
----
-
-## DAY 9 — SPECIALIST AGENT HANDOFF (CLINIC & APPOINTMENT SPECIALIST)
-
-Jana Seva features a specialized multi-agent voice architecture. When a user's request requires clinic discovery, department selection, or appointment assistance, the primary Jana Seva agent announces the transfer and hands off the conversation to the **Clinic & Appointment Specialist**.
-
-### 🏗️ Multi-Agent Architecture
+The analytics dashboard is available at:
 
 ```text
-                         ┌─────────────────────┐
-                         │    Jana Seva        │
-                         │   Main Agent        │
-                         │ Health Access       │
-                         └──────────┬──────────┘
-                                    │
-                     handoff when appointment/
-                     clinic assistance is needed
-                                    │
-                                    ▼
-                         ┌─────────────────────┐
-                         │ Clinic & Appointment│
-                         │ Specialist Agent    │
-                         └─────────────────────┘
+http://localhost:3000/analytics
 ```
 
-### 🎯 Key Capabilities
-1. **Seamless Handoff without Repetition**: User request, language preference, and known location context are automatically packaged and transferred.
-2. **Context-Aware Specialist Greeting**: The specialist introduces itself acknowledging the transferred intent directly (e.g. *"Hi, I'm Jana Seva's Clinic & Appointment Specialist. I understand you're looking for help with a general health consultation appointment..."*).
-3. **Safety & Boundaries**:
-   - Non-diagnostic & non-prescriptive limits.
-   - Emergency red-flags bypass handoff and trigger the **Day 7 Human Escalation** workflow.
-   - Never fabricates appointment availability or fake slots.
-4. **Handoff Logging & Day 8 Analytics Integration**: Every handoff is recorded with `handoff_id`, `call_id`, `from_agent`, `to_agent`, timestamp, and outcome.
-
 ---
 
-## DAY 9 DEMO SCRIPT
+# 📁 Project Structure
 
-### Step 1 — General Question (No Handoff)
-1. User: *"What documents do I need to visit a government hospital?"*
-2. **Jana Seva Main Agent** answers directly: *"To visit a government hospital, please bring a valid government ID like an Aadhaar card or Ration card, along with any past prescriptions."* (No handoff occurs).
-
-### Step 2 — Specialist Handoff
-1. User: *"I want to find a clinic and get help with an appointment for a general consultation."*
-2. **Jana Seva Main Agent** announces out loud: *"I'll connect you with our Clinic & Appointment Specialist, who can help you with the appointment process."*
-3. Main agent invokes `handoff_to_clinic_specialist`.
-
-### Step 3 — Specialist Takes Over (Context Preserved)
-1. **Clinic & Appointment Specialist** introduces itself directly: *"Hi, I'm Jana Seva's Clinic & Appointment Specialist. I understand you're looking for help with a general health consultation appointment. Let's go through the available clinics and next steps."*
-2. Frontend UI updates top floating badge to display: **Clinic & Appointment Specialist**.
-3. User continues the conversation naturally without repeating their request.
-
----
-
-## DAY 9 LINKEDIN POST DRAFT
-
-Day 9 of 10 Days of Voice Agents! 🇮🇳🎙️
-
-Today I built **Specialist Agent Handoff** into **Jana Seva**, our AI Voice Assistant for Health Access in India!
-
-Instead of expecting one monolithic agent to do everything, Jana Seva now uses a specialized multi-agent architecture. When a user asks for clinic discovery, department navigation, or appointment help, the main Jana Seva agent seamlessly hands the live call to the **Clinic & Appointment Specialist**.
-
-✨ Key Features Built:
-1. **Zero Repetition Context Transfer**: Language preference, caller district, and exact appointment intent are transferred instantly.
-2. **Context-Aware Specialist Greeting**: The specialist takes over naturally and references the user's intent without asking "How can I help you?".
-3. **Strict Safety & Emergency Boundaries**: Emergency red flags bypass specialist handoff and immediately trigger human emergency escalation.
-4. **Full Handoff Analytics & DB Logging**: All agent transitions are logged in SQLite and integrated into our call analytics.
-
-Powered by:
-⚡ **Murf Falcon TTS** for ultra-fast, natural conversational voice synthesis in Indian accents
-🚀 **LiveKit Agents** for seamless multi-agent session state transitions
-🎙️ **Deepgram Nova-3** & 🧠 **Google Gemini**
-
-Check out the demo video below!
-
-#VoiceForBharat #VoiceAgents #MurfAI #LiveKit #Python #NextJS #AI #PublicHealth #MultiAgent
-
----
-
-## Configuration
-
-### Murf voice
-
-Edit the `tts=murf.TTS(...)` call in `backend/src/agent.py`. Set the `voice` argument to any Murf voice ID. Examples:
-
-- `Anisha` — Indian English (female, default in this starter)
-- `Pooja` — Indian English (female)
-- `Samar` — Indian English (male)
-- `Amara` — US English (female)
-- `Gordon` — US English (male)
-- `Hazel` — UK English (female)
-- `Bertie` — UK English (male)
-
-Browse all voices: [Murf Voice Library](https://murf.ai/api/docs/voices-styles/voice-library).
-
-### STT provider
-
-STT is configured in `backend/src/agent.py` in the `AgentSession(stt=...)` call. The default is Deepgram (`deepgram.STT(model="nova-3")`). You can swap to another LiveKit-compatible STT plugin if needed.
-
-### LLM (Gemini vs OpenAI)
-
-- **Gemini (default):** Set `GOOGLE_API_KEY` and use `llm=google.LLM(model="gemini-3.5-flash-lite")` in `agent.py`.
-- **OpenAI:** Set `OPENAI_API_KEY`, add the OpenAI plugin, and use the corresponding `llm=openai.LLM(...)` in `agent.py`.
-
-### Audio format
-
-Murf Falcon and LiveKit handle audio format internally. For advanced options, see [Murf API docs](https://murf.ai/api/docs) and [LiveKit docs](https://docs.livekit.io).
-
----
-
-## Project Structure
-
-```
+```text
 murf-livekit-starter/
-├── backend/                 # Python voice agent (LiveKit Agents + Murf Falcon)
+├── backend/
 │   ├── src/
-│   │   └── agent.py         # Agent entrypoint, pipeline (STT/LLM/TTS), system prompt
-│   ├── tests/               # Agent tests
-│   ├── .env.example         # Backend env template
-│   ├── pyproject.toml       # Python deps (uv)
-│   └── railway.toml         # Railway deploy config
-├── frontend/                # Next.js UI for voice sessions
+│   │   ├── agent.py
+│   │   ├── outbound_call.py
+│   │   └── analytics_api.py
+│   ├── tests/
+│   ├── .env.example
+│   └── pyproject.toml
+│
+├── frontend/
 │   ├── app/
-│   │   ├── page.tsx         # Main page
-│   │   └── api/token/       # LiveKit token endpoint (dev)
-│   ├── components/          # UI (agents-ui, app config, theme)
-│   ├── app-config.ts        # Branding, title, button text, accent
-│   ├── .env.example         # Frontend env template
-│   └── package.json         # Node deps (pnpm)
-├── start_app.sh             # Start LiveKit + backend + frontend (macOS/Linux)
-├── start_app.ps1            # Start LiveKit + backend + frontend (Windows)
-├── README.md                # This file
+│   ├── components/
+│   ├── public/
+│   └── package.json
+│
+├── docs/
+│   └── screenshots/
+│
+├── start_app.sh
+├── start_app.ps1
+└── README.md
 ```
 
-For deeper documentation on each part, see:
+---
 
-- [Backend Documentation](./backend/README.md) — agent pipeline, voice/LLM/STT configuration, testing, deployment
-- [Frontend Documentation](./frontend/README.md) — UI customization, visualizers, theming, component architecture
+# 🎙️ Voice Configuration
+
+Murf voice configuration is handled in the backend agent.
+
+Example voices available in the original configuration include:
+
+- Anisha — Indian English
+- Pooja — Indian English
+- Samar — Indian English
+- Amara — US English
+- Gordon — US English
+- Hazel — UK English
+- Bertie — UK English
+
+Jana Seva's voice experience is powered by **Murf Falcon**.
 
 ---
 
-## Links
+# 🧠 Model and Speech Pipeline
 
-- [Murf API Docs](https://murf.ai/api/docs)
-- [Murf Voice Library](https://murf.ai/api/docs/voices-styles/voice-library)
-- [LiveKit Docs](https://docs.livekit.io)
-- [Deepgram Docs](https://developers.deepgram.com)
-- [Murf Falcon Benchmarks](https://murf.ai/falcon/benchmarks)
-- [TTS Latency Benchmarker](https://github.com/sahilsgupta/tts-latency-benchmarker) — run your own p50/p95 tests across providers
-- [Murf Discord](https://discord.gg/FbKAy96Sz7)
-- [Murf Startup Incubator](https://murf.ai/api) — 50M free characters for startups
+### Speech-to-text
+
+Deepgram Nova-3 is used for speech recognition and multilingual endpointing.
+
+### LLM
+
+Google Gemini is used for reasoning and tool calling.
+
+### Text-to-speech
+
+Murf Falcon provides the streaming voice output.
+
+### Real-time transport
+
+LiveKit handles the real-time audio session between the browser/telephony layer and the agent.
 
 ---
 
-## License
+# 📝 Day 9 Demo Script
+
+### Normal request — no handoff
+
+User:
+
+> "What documents do I need to visit a government hospital?"
+
+Jana Seva answers directly.
+
+### Specialist request
+
+User:
+
+> "I want to find a clinic and get help with an appointment for a general consultation."
+
+Main agent:
+
+> "I'll connect you with our Clinic & Appointment Specialist, who can help you with the appointment process."
+
+The specialist then continues:
+
+> "Hi, I'm Jana Seva's Clinic & Appointment Specialist. I understand you're looking for help with a general health consultation appointment. Let's go through the available clinics and next steps."
+
+The user continues without repeating the full request.
+
+---
+
+# 🎥 Demo Evidence
+
+The project includes evidence of:
+
+- Homepage and product positioning
+- Live voice interaction
+- Human escalation management
+- Call analytics
+- Specialist-agent handoff
+
+The Day 10 journey also includes a final demonstration video and public project write-up.
+
+---
+
+# 🧩 What I Learned
+
+The biggest lesson from building Jana Seva was that a voice agent is much more than speech-to-text plus an LLM plus text-to-speech.
+
+A useful production-oriented agent needs:
+
+- Clear objectives
+- Safety boundaries
+- Tool selection
+- Memory
+- Failure handling
+- Human escalation
+- Consent
+- Observability
+- Specialist routing
+- Honest communication
+
+The most important design decision was therefore not "How can the agent answer more questions?"
+
+It was:
+
+> **"How can the system safely decide what should happen next?"**
+
+---
+
+# 🚀 Future Improvements
+
+Potential next steps include:
+
+- More verified government health-service integrations
+- Better multilingual and code-mixed conversation handling
+- More specialist agents
+- Better human-support workflow management
+- Resolution callbacks
+- Duplicate escalation detection
+- More detailed operational analytics
+- Production-grade authentication and access control
+- Stronger evaluation and safety testing
+
+---
+
+# 🏆 10 Days of Voice Agents — VoiceForBharat Edition
+
+Jana Seva was built as part of:
+
+**10 Days of Voice Agents — VoiceForBharat Edition**
+
+The project explores how real-time voice AI can make health-access information easier to navigate while keeping human assistance in the loop when the situation requires it.
+
+---
+
+# 🔗 Technology
+
+- Murf Falcon
+- LiveKit Agents
+- Python
+- Next.js
+- React
+- Deepgram Nova-3
+- Google Gemini
+- SQLite
+- Twilio
+- OpenStreetMap Nominatim
+- Open-Meteo
+
+---
+
+# 📄 License
 
 MIT
